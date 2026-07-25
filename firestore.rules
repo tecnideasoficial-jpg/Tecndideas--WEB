@@ -1,0 +1,26 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Anyone can read store catalog, categories, videos, and services
+    // authenticated users or admins can write
+    match /store_items/{document=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /categories/{document=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /youtube_videos/{document=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /digital_services/{document=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

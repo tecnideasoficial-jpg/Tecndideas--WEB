@@ -1,0 +1,6 @@
+{
+  "name": "Tecnideas - Ecosistema Digital & HUB Tecnológico",
+  "description": "Plataforma integral de soluciones digitales, automatización con IA, servicios corporativos, workspace y capacitación en Medellín, Colombia.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
