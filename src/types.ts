@@ -3,7 +3,7 @@ export type ClientSegment = 'emprendedor' | 'empresa' | 'tramites' | 'capacitaci
 export interface ServiceItem {
   id: string;
   title: string;
-  category: 'digital' | 'tradicional';
+  category: 'digital' | 'tradicional' | 'ecosistema';
   description: string;
   badge?: string;
   iconName: string;

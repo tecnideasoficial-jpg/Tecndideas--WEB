@@ -30,7 +30,8 @@ import {
   ServiceItem,
   Course,
   SolutionPillar,
-  Sede 
+  Sede,
+  WorkspaceSpace 
 } from '../types';
 
 export const AdminPanelModal: React.FC = () => {
@@ -52,6 +53,7 @@ export const AdminPanelModal: React.FC = () => {
     courses,
     solutionPillars,
     sedes,
+    workspaceSpaces,
     addStoreItem,
     updateStoreItem,
     deleteStoreItem,
@@ -72,10 +74,13 @@ export const AdminPanelModal: React.FC = () => {
     deleteSolutionPillar,
     addSede,
     updateSede,
-    deleteSede
+    deleteSede,
+    addWorkspaceSpace,
+    updateWorkspaceSpace,
+    deleteWorkspaceSpace
   } = useAdminData();
 
-  const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'services' | 'courses' | 'pillars' | 'sedes' | 'videos'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'services' | 'courses' | 'pillars' | 'sedes' | 'workspace' | 'videos'>('products');
   const [searchTerm, setSearchTerm] = useState('');
 
   // Login Form state
@@ -113,6 +118,11 @@ export const AdminPanelModal: React.FC = () => {
   // Editing state for Sede
   const [editingSede, setEditingSede] = useState<Partial<Sede> | null>(null);
   const [isSedeModalOpen, setIsSedeModalOpen] = useState(false);
+
+  // Editing state for Workspace Space
+  const [editingWorkspaceSpace, setEditingWorkspaceSpace] = useState<Partial<WorkspaceSpace> | null>(null);
+  const [isWorkspaceModalOpen, setIsWorkspaceModalOpen] = useState(false);
+  const [workspaceAmenitiesText, setWorkspaceAmenitiesText] = useState('');
 
   if (!isAuthModalOpen && !isAdminPanelOpen) return null;
 
@@ -331,6 +341,36 @@ export const AdminPanelModal: React.FC = () => {
     setEditingSede(null);
   };
 
+  // Workspace Space Save
+  const handleSaveWorkspaceSpace = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingWorkspaceSpace?.name || !editingWorkspaceSpace?.priceHour) return;
+
+    const amenitiesArr = workspaceAmenitiesText
+      .split('\n')
+      .map(a => a.trim())
+      .filter(a => a.length > 0);
+
+    if (editingWorkspaceSpace.id) {
+      await updateWorkspaceSpace(editingWorkspaceSpace.id, {
+        ...editingWorkspaceSpace,
+        amenities: amenitiesArr
+      });
+    } else {
+      await addWorkspaceSpace({
+        name: editingWorkspaceSpace.name || 'Nuevo Espacio Workspace',
+        capacity: editingWorkspaceSpace.capacity || '1 a 10 Personas',
+        priceHour: editingWorkspaceSpace.priceHour || '$10.000 COP',
+        priceDay: editingWorkspaceSpace.priceDay || '$50.000 COP',
+        description: editingWorkspaceSpace.description || '',
+        imageUrl: editingWorkspaceSpace.imageUrl || 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80',
+        amenities: amenitiesArr.length > 0 ? amenitiesArr : ['Internet 300 Mbps', 'Café & Té ilimitado', 'Silla ergonómica']
+      });
+    }
+    setIsWorkspaceModalOpen(false);
+    setEditingWorkspaceSpace(null);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
       {/* Modal Container */}
@@ -526,6 +566,18 @@ export const AdminPanelModal: React.FC = () => {
               </button>
 
               <button
+                onClick={() => setActiveTab('workspace')}
+                className={`px-4 py-3 font-bold text-xs flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                  activeTab === 'workspace'
+                    ? 'border-indigo-400 text-indigo-400 bg-indigo-500/10'
+                    : 'border-transparent text-slate-400 hover:text-white'
+                }`}
+              >
+                <Building2 className="w-4 h-4 text-indigo-400" />
+                <span>HUB Workspace ({workspaceSpaces.length})</span>
+              </button>
+
+              <button
                 onClick={() => setActiveTab('videos')}
                 className={`px-4 py-3 font-bold text-xs flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
                   activeTab === 'videos'
@@ -677,6 +729,28 @@ export const AdminPanelModal: React.FC = () => {
                 >
                   <Plus className="w-4 h-4" />
                   <span>Agregar Nueva Sede</span>
+                </button>
+              )}
+
+              {activeTab === 'workspace' && (
+                <button
+                  onClick={() => {
+                    setEditingWorkspaceSpace({
+                      name: '',
+                      capacity: '1 a 10 Personas',
+                      priceHour: '$10.000 COP',
+                      priceDay: '$50.000 COP',
+                      description: '',
+                      imageUrl: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80',
+                      amenities: ['Internet 300 Mbps', 'Café & Té ilimitado', 'Silla ergonómica', 'Descuento en impresiones']
+                    });
+                    setWorkspaceAmenitiesText('Internet 300 Mbps\nCafé & Té ilimitado\nSilla ergonómica\nDescuento en impresiones');
+                    setIsWorkspaceModalOpen(true);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-indigo-600/20 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Agregar Espacio HUB Coworking</span>
                 </button>
               )}
 
@@ -1020,7 +1094,97 @@ export const AdminPanelModal: React.FC = () => {
                 </div>
               )}
 
-              {/* 7. YOUTUBE VIDEOS TAB */}
+              {/* 7. HUB WORKSPACE SPACES TAB */}
+              {activeTab === 'workspace' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {workspaceSpaces
+                    .filter(sp => sp.name.toLowerCase().includes(searchTerm.toLowerCase()) || sp.description.toLowerCase().includes(searchTerm.toLowerCase()))
+                    .map((space) => (
+                      <div key={space.id} className="rounded-2xl bg-slate-950 border border-slate-800 overflow-hidden flex flex-col justify-between">
+                        <div>
+                          {/* Image & Capacity Badge */}
+                          <div className="relative h-40 w-full overflow-hidden bg-slate-900">
+                            <img
+                              src={space.imageUrl}
+                              alt={space.name}
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute top-2 left-2 px-2.5 py-1 rounded bg-indigo-600/90 text-white text-[10px] font-bold uppercase tracking-wider backdrop-blur-xs">
+                              {space.capacity}
+                            </div>
+                          </div>
+
+                          {/* Details */}
+                          <div className="p-4 space-y-3">
+                            <h5 className="font-bold text-sm text-white line-clamp-1">
+                              {space.name}
+                            </h5>
+
+                            <p className="text-xs text-slate-400 line-clamp-2">
+                              {space.description}
+                            </p>
+
+                            {/* Pricing summary */}
+                            <div className="grid grid-cols-2 gap-2 p-2 rounded-xl bg-slate-900/80 border border-slate-800 text-xs font-mono">
+                              <div>
+                                <span className="text-[10px] text-slate-500 uppercase block font-sans">Hora:</span>
+                                <span className="font-bold text-emerald-400">{space.priceHour}</span>
+                              </div>
+                              <div>
+                                <span className="text-[10px] text-slate-500 uppercase block font-sans">Día:</span>
+                                <span className="font-bold text-indigo-400">{space.priceDay}</span>
+                              </div>
+                            </div>
+
+                            {/* Amenities pills */}
+                            <div className="space-y-1">
+                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                                Servicios Incluidos:
+                              </span>
+                              <div className="flex flex-wrap gap-1">
+                                {space.amenities && space.amenities.map((am, idx) => (
+                                  <span key={idx} className="text-[10px] px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-slate-300">
+                                    ✓ {am}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="p-3 border-t border-slate-800/80 flex items-center justify-end gap-2 bg-slate-950/60">
+                          <button
+                            onClick={() => {
+                              setEditingWorkspaceSpace(space);
+                              setWorkspaceAmenitiesText(space.amenities ? space.amenities.join('\n') : '');
+                              setIsWorkspaceModalOpen(true);
+                            }}
+                            className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                          >
+                            <Edit3 className="w-3.5 h-3.5 text-indigo-400" />
+                            <span>Editar Espacio</span>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              if (confirm(`¿Eliminar el espacio de coworking "${space.name}"?`)) {
+                                deleteWorkspaceSpace(space.id);
+                              }
+                            }}
+                            className="px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                            title="Eliminar espacio"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                      </div>
+                    ))}
+                </div>
+              )}
+
+              {/* 8. YOUTUBE VIDEOS TAB */}
               {activeTab === 'videos' && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {youtubeVideos
@@ -1704,6 +1868,169 @@ export const AdminPanelModal: React.FC = () => {
                   className="px-4 py-2 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs cursor-pointer"
                 >
                   Guardar Sede
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* WORKSPACE SPACE FORM MODAL */}
+      {isWorkspaceModalOpen && editingWorkspaceSpace && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs overflow-y-auto">
+          <div className="w-full max-w-xl rounded-2xl bg-slate-900 border border-slate-700 p-6 space-y-4 text-white my-6">
+            <div className="flex items-center justify-between">
+              <h4 className="text-lg font-bold text-indigo-400 flex items-center gap-2">
+                <Building2 className="w-5 h-5" />
+                <span>{editingWorkspaceSpace.id ? 'Editar Espacio HUB Coworking' : 'Nuevo Espacio HUB Coworking'}</span>
+              </h4>
+              <button
+                type="button"
+                onClick={() => setIsWorkspaceModalOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveWorkspaceSpace} className="space-y-3">
+              {/* Name */}
+              <div>
+                <label className="block text-xs font-bold mb-1">Nombre del Espacio</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ej: Puestos Flexibles de Coworking / Sala VIP"
+                  value={editingWorkspaceSpace.name || ''}
+                  onChange={(e) => setEditingWorkspaceSpace({ ...editingWorkspaceSpace, name: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              {/* Capacity and Prices */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-bold mb-1">Capacidad</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ej: 1 a 15 Personas"
+                    value={editingWorkspaceSpace.capacity || ''}
+                    onChange={(e) => setEditingWorkspaceSpace({ ...editingWorkspaceSpace, capacity: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold mb-1 text-emerald-400">Tarifa por Hora</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ej: $8.000 COP"
+                    value={editingWorkspaceSpace.priceHour || ''}
+                    onChange={(e) => setEditingWorkspaceSpace({ ...editingWorkspaceSpace, priceHour: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-sm text-emerald-400 font-mono font-bold focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold mb-1 text-indigo-400">Tarifa Día Completo</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ej: $35.000 COP"
+                    value={editingWorkspaceSpace.priceDay || ''}
+                    onChange={(e) => setEditingWorkspaceSpace({ ...editingWorkspaceSpace, priceDay: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-sm text-indigo-400 font-mono font-bold focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+
+              {/* Photo URL & Presets */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold">Foto / Imagen del Espacio</label>
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    required
+                    placeholder="https://images.unsplash.com/..."
+                    value={editingWorkspaceSpace.imageUrl || ''}
+                    onChange={(e) => setEditingWorkspaceSpace({ ...editingWorkspaceSpace, imageUrl: e.target.value })}
+                    className="flex-1 px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
+                  />
+                  {editingWorkspaceSpace.imageUrl && (
+                    <div className="w-12 h-10 rounded-lg overflow-hidden border border-slate-700 bg-slate-950 shrink-0">
+                      <img src={editingWorkspaceSpace.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Preset Photo Selectors */}
+                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                  <span className="text-[10px] text-slate-400">Fotos sugeridas:</span>
+                  {[
+                    { label: 'Coworking Abierto', url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80' },
+                    { label: 'Sala Ejecutiva', url: 'https://images.unsplash.com/photo-1431540015161-0bf868a2d407?auto=format&fit=crop&w=800&q=80' },
+                    { label: 'Auditorio Tech', url: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=800&q=80' },
+                    { label: 'Oficina Privada', url: 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=800&q=80' },
+                    { label: 'Lounge Creativo', url: 'https://images.unsplash.com/photo-1527192491265-7e15c55b1ed2?auto=format&fit=crop&w=800&q=80' }
+                  ].map((preset, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setEditingWorkspaceSpace({ ...editingWorkspaceSpace, imageUrl: preset.url })}
+                      className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] cursor-pointer transition-colors"
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-xs font-bold mb-1">Descripción del Espacio</label>
+                <textarea
+                  rows={2}
+                  required
+                  placeholder="Espacios de trabajo ergonómicos en un ambiente inspirador con comunidad de emprendedores en Medellín..."
+                  value={editingWorkspaceSpace.description || ''}
+                  onChange={(e) => setEditingWorkspaceSpace({ ...editingWorkspaceSpace, description: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              {/* Included Services / Amenities */}
+              <div>
+                <label className="block text-xs font-bold mb-1">
+                  Servicios Incluidos (Escribe uno por línea)
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="Internet 300 Mbps&#10;Café & Té ilimitado&#10;Silla ergonómica&#10;Descuento en impresiones"
+                  value={workspaceAmenitiesText}
+                  onChange={(e) => setWorkspaceAmenitiesText(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
+                />
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Cada línea se mostrará como una característica con icono de verificación en el HUB.
+                </p>
+              </div>
+
+              {/* Buttons */}
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsWorkspaceModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold cursor-pointer transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs cursor-pointer transition-all shadow-md shadow-indigo-600/30"
+                >
+                  Guardar Espacio HUB
                 </button>
               </div>
             </form>

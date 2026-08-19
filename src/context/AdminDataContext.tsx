@@ -24,14 +24,16 @@ import {
   ServiceItem,
   Course,
   SolutionPillar,
-  Sede
+  Sede,
+  WorkspaceSpace
 } from '../types';
 import { 
   STORE_ITEMS, 
   DIGITAL_SERVICES,
   COURSES,
   INITIAL_SOLUTION_PILLARS,
-  INITIAL_SEDES
+  INITIAL_SEDES,
+  WORKSPACE_SPACES
 } from '../data/tecnideasData';
 
 const INITIAL_CATEGORIES: StoreCategory[] = [
@@ -80,6 +82,7 @@ interface AdminDataContextType {
   courses: Course[];
   solutionPillars: SolutionPillar[];
   sedes: Sede[];
+  workspaceSpaces: WorkspaceSpace[];
   currentUser: User | null;
   isAdmin: boolean;
   isAuthModalOpen: boolean;
@@ -113,6 +116,9 @@ interface AdminDataContextType {
   addSede: (sede: Omit<Sede, 'id'>) => Promise<void>;
   updateSede: (id: string, sede: Partial<Sede>) => Promise<void>;
   deleteSede: (id: string) => Promise<void>;
+  addWorkspaceSpace: (space: Omit<WorkspaceSpace, 'id'>) => Promise<void>;
+  updateWorkspaceSpace: (id: string, space: Partial<WorkspaceSpace>) => Promise<void>;
+  deleteWorkspaceSpace: (id: string) => Promise<void>;
 }
 
 const AdminDataContext = createContext<AdminDataContextType | undefined>(undefined);
@@ -125,6 +131,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [courses, setCourses] = useState<Course[]>(COURSES);
   const [solutionPillars, setSolutionPillars] = useState<SolutionPillar[]>(INITIAL_SOLUTION_PILLARS);
   const [sedes, setSedes] = useState<Sede[]>(INITIAL_SEDES);
+  const [workspaceSpaces, setWorkspaceSpaces] = useState<WorkspaceSpace[]>(WORKSPACE_SPACES);
 
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [localAdminSession, setLocalAdminSession] = useState<boolean>(() => {
@@ -336,6 +343,34 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }, (error) => {
       console.warn('Firestore sedes fallback to local:', error);
       setSedes(INITIAL_SEDES);
+    });
+    return () => unsub();
+  }, []);
+
+  // Sync Workspace Spaces from Firestore
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'workspace_spaces'), async (snapshot) => {
+      if (snapshot.empty) {
+        setWorkspaceSpaces(WORKSPACE_SPACES);
+        if (auth.currentUser) {
+          try {
+            for (const sp of WORKSPACE_SPACES) {
+              await setDoc(doc(db, 'workspace_spaces', sp.id), sp);
+            }
+          } catch (e) {
+            console.warn('Could not seed workspace_spaces:', e);
+          }
+        }
+      } else {
+        const list: WorkspaceSpace[] = [];
+        snapshot.forEach((docSnap) => {
+          list.push({ id: docSnap.id, ...docSnap.data() } as WorkspaceSpace);
+        });
+        setWorkspaceSpaces(list);
+      }
+    }, (error) => {
+      console.warn('Firestore workspace_spaces fallback to local:', error);
+      setWorkspaceSpaces(WORKSPACE_SPACES);
     });
     return () => unsub();
   }, []);
@@ -627,6 +662,36 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
+  // CRUD for Workspace Spaces
+  const addWorkspaceSpace = async (space: Omit<WorkspaceSpace, 'id'>) => {
+    const id = 'space-' + Date.now();
+    const newSpace = { ...space, id };
+    setWorkspaceSpaces((prev) => [...prev, newSpace]);
+    try {
+      await setDoc(doc(db, 'workspace_spaces', id), newSpace);
+    } catch (e) {
+      console.warn('Firestore setDoc workspace_spaces:', e);
+    }
+  };
+
+  const updateWorkspaceSpace = async (id: string, space: Partial<WorkspaceSpace>) => {
+    setWorkspaceSpaces((prev) => prev.map((sp) => (sp.id === id ? { ...sp, ...space } : sp)));
+    try {
+      await updateDoc(doc(db, 'workspace_spaces', id), space);
+    } catch (e) {
+      console.warn('Firestore updateDoc workspace_spaces:', e);
+    }
+  };
+
+  const deleteWorkspaceSpace = async (id: string) => {
+    setWorkspaceSpaces((prev) => prev.filter((sp) => sp.id !== id));
+    try {
+      await deleteDoc(doc(db, 'workspace_spaces', id));
+    } catch (e) {
+      console.warn('Firestore deleteDoc workspace_spaces:', e);
+    }
+  };
+
   return (
     <AdminDataContext.Provider
       value={{
@@ -637,6 +702,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         courses,
         solutionPillars,
         sedes,
+        workspaceSpaces,
         currentUser,
         isAdmin,
         isAuthModalOpen,
@@ -669,7 +735,10 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         deleteSolutionPillar,
         addSede,
         updateSede,
-        deleteSede
+        deleteSede,
+        addWorkspaceSpace,
+        updateWorkspaceSpace,
+        deleteWorkspaceSpace
       }}
     >
       {children}
