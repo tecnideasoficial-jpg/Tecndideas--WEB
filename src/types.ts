@@ -133,3 +133,16 @@ export interface ChatMessage {
   text: string;
   timestamp: string;
 }
+
+export interface MediaItem {
+  id: string;
+  name: string;
+  category: string;
+  storagePath: string;
+  publicUrl: string;
+  width?: number;
+  height?: number;
+  size?: number; // size in bytes
+  createdAt: string;
+}
+

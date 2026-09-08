@@ -26,6 +26,12 @@ service cloud.firestore {
     match /sedes/{document=**} {
       allow read, write: if true;
     }
+    match /media/{document=**} {
+      allow read, write: if true;
+    }
+    match /media_categories/{document=**} {
+      allow read, write: if true;
+    }
     match /{document=**} {
       allow read, write: if true;
     }

@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 import firebaseConfigData from '../../firebase-applet-config.json';
 
 const firebaseConfig = {
@@ -17,3 +18,5 @@ export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 // Initialize Firestore using specific database ID provided in config
 export const db = getFirestore(app, firebaseConfigData.firestoreDatabaseId || '(default)');
+// Initialize Firebase Storage
+export const storage = getStorage(app);

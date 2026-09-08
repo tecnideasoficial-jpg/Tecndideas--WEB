@@ -80,6 +80,23 @@
         "imageUrl": { "type": "string" }
       },
       "required": ["name", "priceHour", "priceDay", "imageUrl"]
+    },
+    "media": {
+      "title": "Media Items",
+      "description": "Multimedia library assets for products, courses, coworking spaces and marketing",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "storagePath": { "type": "string" },
+        "publicUrl": { "type": "string" },
+        "width": { "type": "number" },
+        "height": { "type": "number" },
+        "size": { "type": "number" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["name", "category", "publicUrl"]
     }
   }
 }

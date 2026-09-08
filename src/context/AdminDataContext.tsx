@@ -25,7 +25,8 @@ import {
   Course,
   SolutionPillar,
   Sede,
-  WorkspaceSpace
+  WorkspaceSpace,
+  MediaItem
 } from '../types';
 import { 
   STORE_ITEMS, 
@@ -35,6 +36,11 @@ import {
   INITIAL_SEDES,
   WORKSPACE_SPACES
 } from '../data/tecnideasData';
+import { 
+  INITIAL_MEDIA_CATEGORIES, 
+  INITIAL_MEDIA_ITEMS 
+} from '../data/initialMedia';
+import { deleteMediaFromStorage, slugify } from '../lib/mediaStorage';
 
 const INITIAL_CATEGORIES: StoreCategory[] = [
   { id: 'todos', label: 'Todos', order: 0 },
@@ -119,6 +125,12 @@ interface AdminDataContextType {
   addWorkspaceSpace: (space: Omit<WorkspaceSpace, 'id'>) => Promise<void>;
   updateWorkspaceSpace: (id: string, space: Partial<WorkspaceSpace>) => Promise<void>;
   deleteWorkspaceSpace: (id: string) => Promise<void>;
+  mediaItems: MediaItem[];
+  mediaCategories: string[];
+  addMediaItem: (item: Omit<MediaItem, 'id' | 'createdAt'> & { id?: string }) => Promise<MediaItem>;
+  deleteMediaItem: (id: string) => Promise<void>;
+  addMediaCategory: (categoryName: string) => Promise<void>;
+  isMediaUsed: (urlOrPathOrId: string) => { used: boolean; usedIn: string[] };
 }
 
 const AdminDataContext = createContext<AdminDataContextType | undefined>(undefined);
@@ -171,6 +183,12 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   );
   const [workspaceSpaces, setWorkspaceSpaces] = useState<WorkspaceSpace[]>(() => 
     getLocalCache('tecnideas_cached_workspace_spaces', WORKSPACE_SPACES)
+  );
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>(() =>
+    getLocalCache('tecnideas_cached_media_items', INITIAL_MEDIA_ITEMS)
+  );
+  const [mediaCategories, setMediaCategories] = useState<string[]>(() =>
+    getLocalCache('tecnideas_cached_media_categories', INITIAL_MEDIA_CATEGORIES)
   );
 
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -403,6 +421,55 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
     }, (error) => {
       console.warn('Firestore workspace_spaces fallback to cache/local:', error);
+    });
+    return () => unsub();
+  }, []);
+
+  // Sync Media Items from Firestore
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'media'), async (snapshot) => {
+      if (snapshot.empty) {
+        setMediaItems(INITIAL_MEDIA_ITEMS);
+        setLocalCache('tecnideas_cached_media_items', INITIAL_MEDIA_ITEMS);
+        try {
+          for (const item of INITIAL_MEDIA_ITEMS) {
+            await setDoc(doc(db, 'media', item.id), item);
+          }
+        } catch (e) {
+          console.warn('Could not auto-seed media to Firestore:', e);
+        }
+      } else {
+        const items: MediaItem[] = [];
+        snapshot.forEach((docSnap) => {
+          items.push({ id: docSnap.id, ...docSnap.data() } as MediaItem);
+        });
+        items.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+        setMediaItems(items);
+        setLocalCache('tecnideas_cached_media_items', items);
+      }
+    }, (error) => {
+      console.warn('Firestore media fallback to cache/local:', error);
+    });
+    return () => unsub();
+  }, []);
+
+  // Sync Media Categories from Firestore
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'media_categories'), (snapshot) => {
+      if (!snapshot.empty) {
+        const cats: string[] = [];
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          if (data?.name && !cats.includes(data.name)) {
+            cats.push(data.name);
+          }
+        });
+        const merged = Array.from(new Set([...INITIAL_MEDIA_CATEGORIES, ...cats]));
+        setMediaCategories(merged);
+        setLocalCache('tecnideas_cached_media_categories', merged);
+      }
+    }, (error) => {
+      console.warn('Firestore media_categories fallback:', error);
     });
     return () => unsub();
   }, []);
@@ -860,6 +927,105 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
+  // Media Management Methods
+  const isMediaUsed = (urlOrPathOrId: string): { used: boolean; usedIn: string[] } => {
+    if (!urlOrPathOrId) return { used: false, usedIn: [] };
+    const target = urlOrPathOrId.trim();
+    const usedIn: string[] = [];
+
+    // Check store items
+    for (const item of storeItems) {
+      if (item.imageUrl && (item.imageUrl === target || (target.length > 25 && item.imageUrl.includes(target.split('?')[0])))) {
+        usedIn.push(`Producto: ${item.name}`);
+      }
+    }
+
+    // Check courses
+    for (const course of courses) {
+      if (course.imageUrl && (course.imageUrl === target || (target.length > 25 && course.imageUrl.includes(target.split('?')[0])))) {
+        usedIn.push(`Curso: ${course.title}`);
+      }
+    }
+
+    // Check workspace spaces
+    for (const space of workspaceSpaces) {
+      if (space.imageUrl && (space.imageUrl === target || (target.length > 25 && space.imageUrl.includes(target.split('?')[0])))) {
+        usedIn.push(`Coworking: ${space.name}`);
+      }
+    }
+
+    // Check YouTube videos
+    for (const video of youtubeVideos) {
+      if (video.thumbnail && (video.thumbnail === target || (target.length > 25 && video.thumbnail.includes(target.split('?')[0])))) {
+        usedIn.push(`Video: ${video.title}`);
+      }
+    }
+
+    return { used: usedIn.length > 0, usedIn };
+  };
+
+  const addMediaItem = async (item: Omit<MediaItem, 'id' | 'createdAt'> & { id?: string }): Promise<MediaItem> => {
+    const newId = item.id || `media-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const fullItem: MediaItem = {
+      ...item,
+      id: newId,
+      createdAt: new Date().toISOString()
+    };
+
+    setMediaItems((prev) => {
+      const updated = [fullItem, ...prev.filter((m) => m.id !== newId)];
+      setLocalCache('tecnideas_cached_media_items', updated);
+      return updated;
+    });
+
+    try {
+      await setDoc(doc(db, 'media', newId), fullItem);
+    } catch (e) {
+      console.warn('Firestore setDoc media fallback:', e);
+    }
+
+    return fullItem;
+  };
+
+  const deleteMediaItem = async (id: string) => {
+    const itemToDelete = mediaItems.find((m) => m.id === id);
+    setMediaItems((prev) => {
+      const updated = prev.filter((m) => m.id !== id);
+      setLocalCache('tecnideas_cached_media_items', updated);
+      return updated;
+    });
+
+    if (itemToDelete?.storagePath) {
+      try {
+        await deleteMediaFromStorage(itemToDelete.storagePath);
+      } catch (e) {
+        console.warn('Storage deletion fallback:', e);
+      }
+    }
+
+    try {
+      await deleteDoc(doc(db, 'media', id));
+    } catch (e) {
+      console.warn('Firestore deleteDoc media:', e);
+    }
+  };
+
+  const addMediaCategory = async (categoryName: string) => {
+    const clean = categoryName.trim();
+    if (!clean || mediaCategories.includes(clean)) return;
+    const updated = [...mediaCategories, clean];
+    setMediaCategories(updated);
+    setLocalCache('tecnideas_cached_media_categories', updated);
+    try {
+      await setDoc(doc(db, 'media_categories', slugify(clean)), {
+        name: clean,
+        createdAt: new Date().toISOString()
+      });
+    } catch (e) {
+      console.warn('Firestore setDoc media_categories:', e);
+    }
+  };
+
   return (
     <AdminDataContext.Provider
       value={{
@@ -871,6 +1037,12 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         solutionPillars,
         sedes,
         workspaceSpaces,
+        mediaItems,
+        mediaCategories,
+        addMediaItem,
+        deleteMediaItem,
+        addMediaCategory,
+        isMediaUsed,
         currentUser,
         isAdmin,
         isAuthModalOpen,

@@ -76,8 +76,11 @@ export const StoreCatalog: React.FC = () => {
                 {/* Image */}
                 <div className="relative h-48 overflow-hidden bg-slate-100 dark:bg-slate-950">
                   <img
-                    src={item.imageUrl}
+                    src={item.imageUrl || 'https://images.unsplash.com/photo-1562654501-a0ccc0fc3fb1?auto=format&fit=crop&w=800&q=80'}
                     alt={item.name}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1562654501-a0ccc0fc3fb1?auto=format&fit=crop&w=800&q=80';
+                    }}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   {item.badge && (
@@ -142,6 +145,21 @@ export const StoreCatalog: React.FC = () => {
             >
               ✕
             </button>
+
+            {selectedItem.imageUrl && (
+              <div className="w-full h-44 rounded-2xl overflow-hidden bg-slate-950 border border-slate-200 dark:border-slate-800 relative">
+                <img
+                  src={selectedItem.imageUrl}
+                  alt={selectedItem.name}
+                  className="w-full h-full object-cover"
+                />
+                {selectedItem.badge && (
+                  <span className="absolute top-2 left-2 bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow">
+                    {selectedItem.badge}
+                  </span>
+                )}
+              </div>
+            )}
 
             <div className="space-y-1">
               <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded">

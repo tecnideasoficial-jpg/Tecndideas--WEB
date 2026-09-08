@@ -33,6 +33,8 @@ import {
   Sede,
   WorkspaceSpace 
 } from '../types';
+import { ImageUploader } from './ImageUploader';
+import { MediaLibraryView } from './MediaLibraryView';
 
 export const AdminPanelModal: React.FC = () => {
   const {
@@ -54,6 +56,7 @@ export const AdminPanelModal: React.FC = () => {
     solutionPillars,
     sedes,
     workspaceSpaces,
+    mediaItems,
     addStoreItem,
     updateStoreItem,
     deleteStoreItem,
@@ -80,7 +83,7 @@ export const AdminPanelModal: React.FC = () => {
     deleteWorkspaceSpace
   } = useAdminData();
 
-  const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'services' | 'courses' | 'pillars' | 'sedes' | 'workspace' | 'videos'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'services' | 'courses' | 'pillars' | 'sedes' | 'workspace' | 'videos' | 'media'>('products');
   const [searchTerm, setSearchTerm] = useState('');
 
   // Login Form state
@@ -620,10 +623,23 @@ export const AdminPanelModal: React.FC = () => {
                 <Youtube className="w-4 h-4 text-red-500" />
                 <span>Videos YouTube ({youtubeVideos.length})</span>
               </button>
+
+              <button
+                onClick={() => setActiveTab('media')}
+                className={`px-4 py-3 font-bold text-xs flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                  activeTab === 'media'
+                    ? 'border-purple-400 text-purple-400 bg-purple-500/10'
+                    : 'border-transparent text-slate-400 hover:text-white'
+                }`}
+              >
+                <ImageIcon className="w-4 h-4 text-purple-400" />
+                <span>Biblioteca Multimedia ({mediaItems.length})</span>
+              </button>
             </div>
 
             {/* Tab Controls Bar */}
-            <div className="p-4 bg-slate-900 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 shrink-0">
+            {activeTab !== 'media' && (
+              <div className="p-4 bg-slate-900 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 shrink-0">
               <div className="relative flex-1 min-w-[200px] max-w-md">
                 <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
                 <input
@@ -805,9 +821,17 @@ export const AdminPanelModal: React.FC = () => {
                 </button>
               )}
             </div>
+            )}
 
             {/* TAB CONTENT AREAS */}
             <div className="p-6 overflow-y-auto flex-1 space-y-4">
+              
+              {/* MEDIA LIBRARY TAB */}
+              {activeTab === 'media' && (
+                <div className="h-full">
+                  <MediaLibraryView />
+                </div>
+              )}
               
               {/* 1. PRODUCTS TAB */}
               {activeTab === 'products' && (
@@ -1349,15 +1373,13 @@ export const AdminPanelModal: React.FC = () => {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold mb-1">URL de la Imagen</label>
-                <input
-                  type="text"
-                  value={editingProduct.imageUrl || ''}
-                  onChange={(e) => setEditingProduct({ ...editingProduct, imageUrl: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white"
-                />
-              </div>
+              <ImageUploader
+                value={editingProduct.imageUrl || ''}
+                onChange={(url) => setEditingProduct({ ...editingProduct, imageUrl: url })}
+                label="Foto / Imagen del Producto o Servicio"
+                categoryHint={editingProduct.category}
+                aspectRatioLabel="Espacio de tarjeta de tienda (16:10 / 4:3)"
+              />
 
               <div>
                 <label className="block text-xs font-bold mb-1">Descripción</label>
@@ -1639,15 +1661,13 @@ export const AdminPanelModal: React.FC = () => {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold mb-1">URL Imagen</label>
-                <input
-                  type="text"
-                  value={editingCourse.imageUrl || ''}
-                  onChange={(e) => setEditingCourse({ ...editingCourse, imageUrl: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white"
-                />
-              </div>
+              <ImageUploader
+                value={editingCourse.imageUrl || ''}
+                onChange={(url) => setEditingCourse({ ...editingCourse, imageUrl: url })}
+                label="Foto / Portada del Curso o Taller"
+                categoryHint="Cursos & Capacitación"
+                aspectRatioLabel="Espacio de portada de curso (16:10)"
+              />
 
               <div className="flex justify-end gap-2 pt-2">
                 <button
@@ -1978,46 +1998,14 @@ export const AdminPanelModal: React.FC = () => {
                 </div>
               </div>
 
-              {/* Photo URL & Presets */}
-              <div className="space-y-2">
-                <label className="block text-xs font-bold">Foto / Imagen del Espacio</label>
-                <div className="flex gap-2">
-                  <input
-                    type="url"
-                    required
-                    placeholder="https://images.unsplash.com/..."
-                    value={editingWorkspaceSpace.imageUrl || ''}
-                    onChange={(e) => setEditingWorkspaceSpace({ ...editingWorkspaceSpace, imageUrl: e.target.value })}
-                    className="flex-1 px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
-                  />
-                  {editingWorkspaceSpace.imageUrl && (
-                    <div className="w-12 h-10 rounded-lg overflow-hidden border border-slate-700 bg-slate-950 shrink-0">
-                      <img src={editingWorkspaceSpace.imageUrl} alt="Preview" className="w-full h-full object-cover" />
-                    </div>
-                  )}
-                </div>
-
-                {/* Preset Photo Selectors */}
-                <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                  <span className="text-[10px] text-slate-400">Fotos sugeridas:</span>
-                  {[
-                    { label: 'Coworking Abierto', url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80' },
-                    { label: 'Sala Ejecutiva', url: 'https://images.unsplash.com/photo-1431540015161-0bf868a2d407?auto=format&fit=crop&w=800&q=80' },
-                    { label: 'Auditorio Tech', url: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=800&q=80' },
-                    { label: 'Oficina Privada', url: 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=800&q=80' },
-                    { label: 'Lounge Creativo', url: 'https://images.unsplash.com/photo-1527192491265-7e15c55b1ed2?auto=format&fit=crop&w=800&q=80' }
-                  ].map((preset, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => setEditingWorkspaceSpace({ ...editingWorkspaceSpace, imageUrl: preset.url })}
-                      className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] cursor-pointer transition-colors"
-                    >
-                      {preset.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              {/* Image Uploader & Presets */}
+              <ImageUploader
+                value={editingWorkspaceSpace.imageUrl || ''}
+                onChange={(url) => setEditingWorkspaceSpace({ ...editingWorkspaceSpace, imageUrl: url })}
+                label="Foto / Imagen del Espacio HUB Coworking"
+                categoryHint="Coworking & Espacios"
+                aspectRatioLabel="Espacio de tarjeta Coworking (16:10)"
+              />
 
               {/* Description */}
               <div>
