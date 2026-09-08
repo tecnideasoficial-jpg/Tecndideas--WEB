@@ -124,6 +124,16 @@ export const AdminPanelModal: React.FC = () => {
   const [isWorkspaceModalOpen, setIsWorkspaceModalOpen] = useState(false);
   const [workspaceAmenitiesText, setWorkspaceAmenitiesText] = useState('');
 
+  // Save Confirmation Toast/Banner
+  const [successNotification, setSuccessNotification] = useState<string>('');
+
+  const showNotification = (msg: string) => {
+    setSuccessNotification(msg);
+    setTimeout(() => {
+      setSuccessNotification('');
+    }, 4500);
+  };
+
   if (!isAuthModalOpen && !isAdminPanelOpen) return null;
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
@@ -155,29 +165,34 @@ export const AdminPanelModal: React.FC = () => {
   // Product Save
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingProduct?.name || !editingProduct?.price || !editingProduct?.category) return;
+    if (!editingProduct?.name || editingProduct.price === undefined || editingProduct.price === null || !editingProduct?.category) return;
 
     const featArray = typeof editingProduct.features === 'string'
       ? (editingProduct.features as string).split('\n').map(s => s.trim()).filter(Boolean)
       : editingProduct.features || [];
 
+    const numericPrice = Number(editingProduct.price) || 0;
+
     if (editingProduct.id) {
       await updateStoreItem(editingProduct.id, {
         ...editingProduct,
+        price: numericPrice,
         features: featArray
       });
+      showNotification('¡Producto actualizado y guardado correctamente!');
     } else {
       await addStoreItem({
         name: editingProduct.name || '',
-        category: editingProduct.category || 'digital',
+        category: editingProduct.category || 'impresion_digitacion',
         type: (editingProduct.type as any) || 'servicio',
-        price: Number(editingProduct.price) || 0,
+        price: numericPrice,
         currency: editingProduct.currency || 'COP',
         description: editingProduct.description || '',
         imageUrl: editingProduct.imageUrl || 'https://images.unsplash.com/photo-1562654501-a0ccc0fc3fb1?auto=format&fit=crop&w=800&q=80',
         badge: editingProduct.badge || '',
         features: featArray
       });
+      showNotification('¡Nuevo producto guardado y añadido al catálogo!');
     }
     setIsProductModalOpen(false);
     setEditingProduct(null);
@@ -416,6 +431,23 @@ export const AdminPanelModal: React.FC = () => {
             </button>
           </div>
         </div>
+
+        {/* Success Confirmation Toast Banner */}
+        {successNotification && (
+          <div className="px-6 py-2.5 bg-emerald-500/20 border-b border-emerald-500/40 text-emerald-300 text-xs flex items-center justify-between gap-2 shrink-0 animate-in fade-in">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span className="font-semibold">{successNotification}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSuccessNotification('')}
+              className="text-emerald-400 hover:text-emerald-200 text-xs font-bold px-2 py-0.5"
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
         {/* Content Body */}
         {!isAdmin ? (

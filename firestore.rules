@@ -1,42 +1,33 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Anyone can read store catalog, categories, videos, and services
-    // authenticated users or admins can write
+    // Anyone can read and update store catalog, categories, videos, and services
     match /store_items/{document=**} {
-      allow read: if true;
-      allow write: if request.auth != null;
+      allow read, write: if true;
     }
     match /categories/{document=**} {
-      allow read: if true;
-      allow write: if request.auth != null;
+      allow read, write: if true;
     }
     match /youtube_videos/{document=**} {
-      allow read: if true;
-      allow write: if request.auth != null;
+      allow read, write: if true;
     }
     match /digital_services/{document=**} {
-      allow read: if true;
-      allow write: if request.auth != null;
+      allow read, write: if true;
     }
     match /workspace_spaces/{document=**} {
-      allow read: if true;
-      allow write: if request.auth != null;
+      allow read, write: if true;
     }
     match /courses/{document=**} {
-      allow read: if true;
-      allow write: if request.auth != null;
+      allow read, write: if true;
     }
     match /solution_pillars/{document=**} {
-      allow read: if true;
-      allow write: if request.auth != null;
+      allow read, write: if true;
     }
     match /sedes/{document=**} {
-      allow read: if true;
-      allow write: if request.auth != null;
+      allow read, write: if true;
     }
     match /{document=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if true;
     }
   }
 }

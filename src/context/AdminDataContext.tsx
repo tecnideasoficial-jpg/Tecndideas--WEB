@@ -123,15 +123,55 @@ interface AdminDataContextType {
 
 const AdminDataContext = createContext<AdminDataContextType | undefined>(undefined);
 
+// Helper for persistent local caching
+function getLocalCache<T>(key: string, fallback: T): T {
+  try {
+    const saved = localStorage.getItem(key);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) ? parsed.length > 0 : !!parsed) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.warn(`Error reading localStorage key ${key}:`, e);
+  }
+  return fallback;
+}
+
+function setLocalCache<T>(key: string, data: T) {
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch (e) {
+    console.warn(`Error writing localStorage key ${key}:`, e);
+  }
+}
+
 export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [storeItems, setStoreItems] = useState<StoreItem[]>(STORE_ITEMS);
-  const [categories, setCategories] = useState<StoreCategory[]>(INITIAL_CATEGORIES);
-  const [youtubeVideos, setYoutubeVideos] = useState<YoutubeVideo[]>(INITIAL_YOUTUBE_VIDEOS);
-  const [digitalServices, setDigitalServices] = useState<ServiceItem[]>(DIGITAL_SERVICES);
-  const [courses, setCourses] = useState<Course[]>(COURSES);
-  const [solutionPillars, setSolutionPillars] = useState<SolutionPillar[]>(INITIAL_SOLUTION_PILLARS);
-  const [sedes, setSedes] = useState<Sede[]>(INITIAL_SEDES);
-  const [workspaceSpaces, setWorkspaceSpaces] = useState<WorkspaceSpace[]>(WORKSPACE_SPACES);
+  const [storeItems, setStoreItems] = useState<StoreItem[]>(() => 
+    getLocalCache('tecnideas_cached_store_items', STORE_ITEMS)
+  );
+  const [categories, setCategories] = useState<StoreCategory[]>(() => 
+    getLocalCache('tecnideas_cached_categories', INITIAL_CATEGORIES)
+  );
+  const [youtubeVideos, setYoutubeVideos] = useState<YoutubeVideo[]>(() => 
+    getLocalCache('tecnideas_cached_youtube_videos', INITIAL_YOUTUBE_VIDEOS)
+  );
+  const [digitalServices, setDigitalServices] = useState<ServiceItem[]>(() => 
+    getLocalCache('tecnideas_cached_digital_services', DIGITAL_SERVICES)
+  );
+  const [courses, setCourses] = useState<Course[]>(() => 
+    getLocalCache('tecnideas_cached_courses', COURSES)
+  );
+  const [solutionPillars, setSolutionPillars] = useState<SolutionPillar[]>(() => 
+    getLocalCache('tecnideas_cached_solution_pillars', INITIAL_SOLUTION_PILLARS)
+  );
+  const [sedes, setSedes] = useState<Sede[]>(() => 
+    getLocalCache('tecnideas_cached_sedes', INITIAL_SEDES)
+  );
+  const [workspaceSpaces, setWorkspaceSpaces] = useState<WorkspaceSpace[]>(() => 
+    getLocalCache('tecnideas_cached_workspace_spaces', WORKSPACE_SPACES)
+  );
 
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [localAdminSession, setLocalAdminSession] = useState<boolean>(() => {
@@ -155,14 +195,13 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const unsub = onSnapshot(collection(db, 'store_items'), async (snapshot) => {
       if (snapshot.empty) {
         setStoreItems(STORE_ITEMS);
-        if (auth.currentUser) {
-          try {
-            for (const item of STORE_ITEMS) {
-              await setDoc(doc(db, 'store_items', item.id), item);
-            }
-          } catch (e) {
-            console.warn('Could not seed store_items:', e);
+        setLocalCache('tecnideas_cached_store_items', STORE_ITEMS);
+        try {
+          for (const item of STORE_ITEMS) {
+            await setDoc(doc(db, 'store_items', item.id), item);
           }
+        } catch (e) {
+          console.warn('Could not auto-seed store_items to Firestore:', e);
         }
       } else {
         const items: StoreItem[] = [];
@@ -170,10 +209,10 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           items.push({ id: docSnap.id, ...docSnap.data() } as StoreItem);
         });
         setStoreItems(items);
+        setLocalCache('tecnideas_cached_store_items', items);
       }
     }, (error) => {
-      console.warn('Firestore store_items fallback to local:', error);
-      setStoreItems(STORE_ITEMS);
+      console.warn('Firestore store_items fallback to cache/local:', error);
     });
     return () => unsub();
   }, []);
@@ -183,14 +222,13 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const unsub = onSnapshot(collection(db, 'categories'), async (snapshot) => {
       if (snapshot.empty) {
         setCategories(INITIAL_CATEGORIES);
-        if (auth.currentUser) {
-          try {
-            for (const cat of INITIAL_CATEGORIES) {
-              await setDoc(doc(db, 'categories', cat.id), cat);
-            }
-          } catch (e) {
-            console.warn('Could not seed categories:', e);
+        setLocalCache('tecnideas_cached_categories', INITIAL_CATEGORIES);
+        try {
+          for (const cat of INITIAL_CATEGORIES) {
+            await setDoc(doc(db, 'categories', cat.id), cat);
           }
+        } catch (e) {
+          console.warn('Could not auto-seed categories to Firestore:', e);
         }
       } else {
         const cats: StoreCategory[] = [];
@@ -199,10 +237,10 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         });
         cats.sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
         setCategories(cats);
+        setLocalCache('tecnideas_cached_categories', cats);
       }
     }, (error) => {
-      console.warn('Firestore categories fallback to local:', error);
-      setCategories(INITIAL_CATEGORIES);
+      console.warn('Firestore categories fallback to cache/local:', error);
     });
     return () => unsub();
   }, []);
@@ -212,14 +250,13 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const unsub = onSnapshot(collection(db, 'youtube_videos'), async (snapshot) => {
       if (snapshot.empty) {
         setYoutubeVideos(INITIAL_YOUTUBE_VIDEOS);
-        if (auth.currentUser) {
-          try {
-            for (const video of INITIAL_YOUTUBE_VIDEOS) {
-              await setDoc(doc(db, 'youtube_videos', video.id), video);
-            }
-          } catch (e) {
-            console.warn('Could not seed youtube_videos:', e);
+        setLocalCache('tecnideas_cached_youtube_videos', INITIAL_YOUTUBE_VIDEOS);
+        try {
+          for (const video of INITIAL_YOUTUBE_VIDEOS) {
+            await setDoc(doc(db, 'youtube_videos', video.id), video);
           }
+        } catch (e) {
+          console.warn('Could not auto-seed youtube_videos to Firestore:', e);
         }
       } else {
         const videos: YoutubeVideo[] = [];
@@ -227,10 +264,10 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           videos.push({ id: docSnap.id, ...docSnap.data() } as YoutubeVideo);
         });
         setYoutubeVideos(videos);
+        setLocalCache('tecnideas_cached_youtube_videos', videos);
       }
     }, (error) => {
-      console.warn('Firestore youtube_videos fallback to local:', error);
-      setYoutubeVideos(INITIAL_YOUTUBE_VIDEOS);
+      console.warn('Firestore youtube_videos fallback to cache/local:', error);
     });
     return () => unsub();
   }, []);
@@ -240,14 +277,13 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const unsub = onSnapshot(collection(db, 'digital_services'), async (snapshot) => {
       if (snapshot.empty) {
         setDigitalServices(DIGITAL_SERVICES);
-        if (auth.currentUser) {
-          try {
-            for (const srv of DIGITAL_SERVICES) {
-              await setDoc(doc(db, 'digital_services', srv.id), srv);
-            }
-          } catch (e) {
-            console.warn('Could not seed digital_services:', e);
+        setLocalCache('tecnideas_cached_digital_services', DIGITAL_SERVICES);
+        try {
+          for (const srv of DIGITAL_SERVICES) {
+            await setDoc(doc(db, 'digital_services', srv.id), srv);
           }
+        } catch (e) {
+          console.warn('Could not auto-seed digital_services to Firestore:', e);
         }
       } else {
         const srvs: ServiceItem[] = [];
@@ -255,10 +291,10 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           srvs.push({ id: docSnap.id, ...docSnap.data() } as ServiceItem);
         });
         setDigitalServices(srvs);
+        setLocalCache('tecnideas_cached_digital_services', srvs);
       }
     }, (error) => {
-      console.warn('Firestore digital_services fallback to local:', error);
-      setDigitalServices(DIGITAL_SERVICES);
+      console.warn('Firestore digital_services fallback to cache/local:', error);
     });
     return () => unsub();
   }, []);
@@ -268,14 +304,13 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const unsub = onSnapshot(collection(db, 'courses'), async (snapshot) => {
       if (snapshot.empty) {
         setCourses(COURSES);
-        if (auth.currentUser) {
-          try {
-            for (const crs of COURSES) {
-              await setDoc(doc(db, 'courses', crs.id), crs);
-            }
-          } catch (e) {
-            console.warn('Could not seed courses:', e);
+        setLocalCache('tecnideas_cached_courses', COURSES);
+        try {
+          for (const crs of COURSES) {
+            await setDoc(doc(db, 'courses', crs.id), crs);
           }
+        } catch (e) {
+          console.warn('Could not auto-seed courses to Firestore:', e);
         }
       } else {
         const crsList: Course[] = [];
@@ -283,10 +318,10 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           crsList.push({ id: docSnap.id, ...docSnap.data() } as Course);
         });
         setCourses(crsList);
+        setLocalCache('tecnideas_cached_courses', crsList);
       }
     }, (error) => {
-      console.warn('Firestore courses fallback to local:', error);
-      setCourses(COURSES);
+      console.warn('Firestore courses fallback to cache/local:', error);
     });
     return () => unsub();
   }, []);
@@ -296,14 +331,13 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const unsub = onSnapshot(collection(db, 'solution_pillars'), async (snapshot) => {
       if (snapshot.empty) {
         setSolutionPillars(INITIAL_SOLUTION_PILLARS);
-        if (auth.currentUser) {
-          try {
-            for (const pillar of INITIAL_SOLUTION_PILLARS) {
-              await setDoc(doc(db, 'solution_pillars', pillar.id), pillar);
-            }
-          } catch (e) {
-            console.warn('Could not seed solution_pillars:', e);
+        setLocalCache('tecnideas_cached_solution_pillars', INITIAL_SOLUTION_PILLARS);
+        try {
+          for (const pillar of INITIAL_SOLUTION_PILLARS) {
+            await setDoc(doc(db, 'solution_pillars', pillar.id), pillar);
           }
+        } catch (e) {
+          console.warn('Could not auto-seed solution_pillars to Firestore:', e);
         }
       } else {
         const list: SolutionPillar[] = [];
@@ -311,10 +345,10 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           list.push({ id: docSnap.id, ...docSnap.data() } as SolutionPillar);
         });
         setSolutionPillars(list);
+        setLocalCache('tecnideas_cached_solution_pillars', list);
       }
     }, (error) => {
-      console.warn('Firestore solution_pillars fallback to local:', error);
-      setSolutionPillars(INITIAL_SOLUTION_PILLARS);
+      console.warn('Firestore solution_pillars fallback to cache/local:', error);
     });
     return () => unsub();
   }, []);
@@ -324,14 +358,13 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const unsub = onSnapshot(collection(db, 'sedes'), async (snapshot) => {
       if (snapshot.empty) {
         setSedes(INITIAL_SEDES);
-        if (auth.currentUser) {
-          try {
-            for (const s of INITIAL_SEDES) {
-              await setDoc(doc(db, 'sedes', s.id), s);
-            }
-          } catch (e) {
-            console.warn('Could not seed sedes:', e);
+        setLocalCache('tecnideas_cached_sedes', INITIAL_SEDES);
+        try {
+          for (const s of INITIAL_SEDES) {
+            await setDoc(doc(db, 'sedes', s.id), s);
           }
+        } catch (e) {
+          console.warn('Could not auto-seed sedes to Firestore:', e);
         }
       } else {
         const list: Sede[] = [];
@@ -339,10 +372,10 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           list.push({ id: docSnap.id, ...docSnap.data() } as Sede);
         });
         setSedes(list);
+        setLocalCache('tecnideas_cached_sedes', list);
       }
     }, (error) => {
-      console.warn('Firestore sedes fallback to local:', error);
-      setSedes(INITIAL_SEDES);
+      console.warn('Firestore sedes fallback to cache/local:', error);
     });
     return () => unsub();
   }, []);
@@ -352,14 +385,13 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const unsub = onSnapshot(collection(db, 'workspace_spaces'), async (snapshot) => {
       if (snapshot.empty) {
         setWorkspaceSpaces(WORKSPACE_SPACES);
-        if (auth.currentUser) {
-          try {
-            for (const sp of WORKSPACE_SPACES) {
-              await setDoc(doc(db, 'workspace_spaces', sp.id), sp);
-            }
-          } catch (e) {
-            console.warn('Could not seed workspace_spaces:', e);
+        setLocalCache('tecnideas_cached_workspace_spaces', WORKSPACE_SPACES);
+        try {
+          for (const sp of WORKSPACE_SPACES) {
+            await setDoc(doc(db, 'workspace_spaces', sp.id), sp);
           }
+        } catch (e) {
+          console.warn('Could not auto-seed workspace_spaces to Firestore:', e);
         }
       } else {
         const list: WorkspaceSpace[] = [];
@@ -367,10 +399,10 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           list.push({ id: docSnap.id, ...docSnap.data() } as WorkspaceSpace);
         });
         setWorkspaceSpaces(list);
+        setLocalCache('tecnideas_cached_workspace_spaces', list);
       }
     }, (error) => {
-      console.warn('Firestore workspace_spaces fallback to local:', error);
-      setWorkspaceSpaces(WORKSPACE_SPACES);
+      console.warn('Firestore workspace_spaces fallback to cache/local:', error);
     });
     return () => unsub();
   }, []);
@@ -455,8 +487,12 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // CRUD for Store Items
   const addStoreItem = async (item: Omit<StoreItem, 'id'>) => {
     const id = 'prod-' + Date.now();
-    const newItem = { ...item, id };
-    setStoreItems((prev) => [newItem, ...prev]);
+    const newItem: StoreItem = { ...item, id };
+    setStoreItems((prev) => {
+      const next = [newItem, ...prev];
+      setLocalCache('tecnideas_cached_store_items', next);
+      return next;
+    });
     try {
       await setDoc(doc(db, 'store_items', id), newItem);
     } catch (e) {
@@ -465,16 +501,29 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const updateStoreItem = async (id: string, item: Partial<StoreItem>) => {
-    setStoreItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...item } : i)));
+    let updatedItem: StoreItem | null = null;
+    setStoreItems((prev) => {
+      const existing = prev.find((i) => i.id === id);
+      updatedItem = existing ? { ...existing, ...item, id } : ({ ...item, id } as StoreItem);
+      const next = prev.map((i) => (i.id === id ? updatedItem! : i));
+      setLocalCache('tecnideas_cached_store_items', next);
+      return next;
+    });
     try {
-      await updateDoc(doc(db, 'store_items', id), item);
+      if (updatedItem) {
+        await setDoc(doc(db, 'store_items', id), updatedItem, { merge: true });
+      }
     } catch (e) {
-      console.warn('Firestore updateDoc store_items:', e);
+      console.warn('Firestore setDoc store_items:', e);
     }
   };
 
   const deleteStoreItem = async (id: string) => {
-    setStoreItems((prev) => prev.filter((i) => i.id !== id));
+    setStoreItems((prev) => {
+      const next = prev.filter((i) => i.id !== id);
+      setLocalCache('tecnideas_cached_store_items', next);
+      return next;
+    });
     try {
       await deleteDoc(doc(db, 'store_items', id));
     } catch (e) {
@@ -486,7 +535,11 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const addCategory = async (cat: Omit<StoreCategory, 'id'> & { id?: string }) => {
     const id = cat.id || cat.label.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
     const newCat = { id, label: cat.label, order: cat.order ?? (categories.length + 1) };
-    setCategories((prev) => [...prev, newCat]);
+    setCategories((prev) => {
+      const next = [...prev, newCat];
+      setLocalCache('tecnideas_cached_categories', next);
+      return next;
+    });
     try {
       await setDoc(doc(db, 'categories', id), newCat);
     } catch (e) {
@@ -495,16 +548,29 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const updateCategory = async (id: string, cat: Partial<StoreCategory>) => {
-    setCategories((prev) => prev.map((c) => (c.id === id ? { ...c, ...cat } : c)));
+    let updatedCat: StoreCategory | null = null;
+    setCategories((prev) => {
+      const existing = prev.find((c) => c.id === id);
+      updatedCat = existing ? { ...existing, ...cat, id } : ({ ...cat, id } as StoreCategory);
+      const next = prev.map((c) => (c.id === id ? updatedCat! : c));
+      setLocalCache('tecnideas_cached_categories', next);
+      return next;
+    });
     try {
-      await updateDoc(doc(db, 'categories', id), cat);
+      if (updatedCat) {
+        await setDoc(doc(db, 'categories', id), updatedCat, { merge: true });
+      }
     } catch (e) {
-      console.warn('Firestore updateDoc categories:', e);
+      console.warn('Firestore setDoc categories:', e);
     }
   };
 
   const deleteCategory = async (id: string) => {
-    setCategories((prev) => prev.filter((c) => c.id !== id));
+    setCategories((prev) => {
+      const next = prev.filter((c) => c.id !== id);
+      setLocalCache('tecnideas_cached_categories', next);
+      return next;
+    });
     try {
       await deleteDoc(doc(db, 'categories', id));
     } catch (e) {
@@ -516,7 +582,11 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const addYoutubeVideo = async (video: Omit<YoutubeVideo, 'id'>) => {
     const id = 'yt-' + Date.now();
     const newVideo = { ...video, id };
-    setYoutubeVideos((prev) => [newVideo, ...prev]);
+    setYoutubeVideos((prev) => {
+      const next = [newVideo, ...prev];
+      setLocalCache('tecnideas_cached_youtube_videos', next);
+      return next;
+    });
     try {
       await setDoc(doc(db, 'youtube_videos', id), newVideo);
     } catch (e) {
@@ -525,16 +595,29 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const updateYoutubeVideo = async (id: string, video: Partial<YoutubeVideo>) => {
-    setYoutubeVideos((prev) => prev.map((v) => (v.id === id ? { ...v, ...video } : v)));
+    let updatedVideo: YoutubeVideo | null = null;
+    setYoutubeVideos((prev) => {
+      const existing = prev.find((v) => v.id === id);
+      updatedVideo = existing ? { ...existing, ...video, id } : ({ ...video, id } as YoutubeVideo);
+      const next = prev.map((v) => (v.id === id ? updatedVideo! : v));
+      setLocalCache('tecnideas_cached_youtube_videos', next);
+      return next;
+    });
     try {
-      await updateDoc(doc(db, 'youtube_videos', id), video);
+      if (updatedVideo) {
+        await setDoc(doc(db, 'youtube_videos', id), updatedVideo, { merge: true });
+      }
     } catch (e) {
-      console.warn('Firestore updateDoc youtube_videos:', e);
+      console.warn('Firestore setDoc youtube_videos:', e);
     }
   };
 
   const deleteYoutubeVideo = async (id: string) => {
-    setYoutubeVideos((prev) => prev.filter((v) => v.id !== id));
+    setYoutubeVideos((prev) => {
+      const next = prev.filter((v) => v.id !== id);
+      setLocalCache('tecnideas_cached_youtube_videos', next);
+      return next;
+    });
     try {
       await deleteDoc(doc(db, 'youtube_videos', id));
     } catch (e) {
@@ -546,7 +629,11 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const addDigitalService = async (service: Omit<ServiceItem, 'id'>) => {
     const id = 'srv-' + Date.now();
     const newService = { ...service, id };
-    setDigitalServices((prev) => [newService, ...prev]);
+    setDigitalServices((prev) => {
+      const next = [newService, ...prev];
+      setLocalCache('tecnideas_cached_digital_services', next);
+      return next;
+    });
     try {
       await setDoc(doc(db, 'digital_services', id), newService);
     } catch (e) {
@@ -555,16 +642,29 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const updateDigitalService = async (id: string, service: Partial<ServiceItem>) => {
-    setDigitalServices((prev) => prev.map((s) => (s.id === id ? { ...s, ...service } : s)));
+    let updatedService: ServiceItem | null = null;
+    setDigitalServices((prev) => {
+      const existing = prev.find((s) => s.id === id);
+      updatedService = existing ? { ...existing, ...service, id } : ({ ...service, id } as ServiceItem);
+      const next = prev.map((s) => (s.id === id ? updatedService! : s));
+      setLocalCache('tecnideas_cached_digital_services', next);
+      return next;
+    });
     try {
-      await updateDoc(doc(db, 'digital_services', id), service);
+      if (updatedService) {
+        await setDoc(doc(db, 'digital_services', id), updatedService, { merge: true });
+      }
     } catch (e) {
-      console.warn('Firestore updateDoc digital_services:', e);
+      console.warn('Firestore setDoc digital_services:', e);
     }
   };
 
   const deleteDigitalService = async (id: string) => {
-    setDigitalServices((prev) => prev.filter((s) => s.id !== id));
+    setDigitalServices((prev) => {
+      const next = prev.filter((s) => s.id !== id);
+      setLocalCache('tecnideas_cached_digital_services', next);
+      return next;
+    });
     try {
       await deleteDoc(doc(db, 'digital_services', id));
     } catch (e) {
@@ -576,7 +676,11 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const addCourse = async (course: Omit<Course, 'id'>) => {
     const id = 'crs-' + Date.now();
     const newCourse = { ...course, id };
-    setCourses((prev) => [newCourse, ...prev]);
+    setCourses((prev) => {
+      const next = [newCourse, ...prev];
+      setLocalCache('tecnideas_cached_courses', next);
+      return next;
+    });
     try {
       await setDoc(doc(db, 'courses', id), newCourse);
     } catch (e) {
@@ -585,16 +689,29 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const updateCourse = async (id: string, course: Partial<Course>) => {
-    setCourses((prev) => prev.map((c) => (c.id === id ? { ...c, ...course } : c)));
+    let updatedCourse: Course | null = null;
+    setCourses((prev) => {
+      const existing = prev.find((c) => c.id === id);
+      updatedCourse = existing ? { ...existing, ...course, id } : ({ ...course, id } as Course);
+      const next = prev.map((c) => (c.id === id ? updatedCourse! : c));
+      setLocalCache('tecnideas_cached_courses', next);
+      return next;
+    });
     try {
-      await updateDoc(doc(db, 'courses', id), course);
+      if (updatedCourse) {
+        await setDoc(doc(db, 'courses', id), updatedCourse, { merge: true });
+      }
     } catch (e) {
-      console.warn('Firestore updateDoc courses:', e);
+      console.warn('Firestore setDoc courses:', e);
     }
   };
 
   const deleteCourse = async (id: string) => {
-    setCourses((prev) => prev.filter((c) => c.id !== id));
+    setCourses((prev) => {
+      const next = prev.filter((c) => c.id !== id);
+      setLocalCache('tecnideas_cached_courses', next);
+      return next;
+    });
     try {
       await deleteDoc(doc(db, 'courses', id));
     } catch (e) {
@@ -606,7 +723,11 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const addSolutionPillar = async (pillar: Omit<SolutionPillar, 'id'>) => {
     const id = 'pillar-' + Date.now();
     const newPillar = { ...pillar, id };
-    setSolutionPillars((prev) => [...prev, newPillar]);
+    setSolutionPillars((prev) => {
+      const next = [...prev, newPillar];
+      setLocalCache('tecnideas_cached_solution_pillars', next);
+      return next;
+    });
     try {
       await setDoc(doc(db, 'solution_pillars', id), newPillar);
     } catch (e) {
@@ -615,16 +736,29 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const updateSolutionPillar = async (id: string, pillar: Partial<SolutionPillar>) => {
-    setSolutionPillars((prev) => prev.map((p) => (p.id === id ? { ...p, ...pillar } : p)));
+    let updatedPillar: SolutionPillar | null = null;
+    setSolutionPillars((prev) => {
+      const existing = prev.find((p) => p.id === id);
+      updatedPillar = existing ? { ...existing, ...pillar, id } : ({ ...pillar, id } as SolutionPillar);
+      const next = prev.map((p) => (p.id === id ? updatedPillar! : p));
+      setLocalCache('tecnideas_cached_solution_pillars', next);
+      return next;
+    });
     try {
-      await updateDoc(doc(db, 'solution_pillars', id), pillar);
+      if (updatedPillar) {
+        await setDoc(doc(db, 'solution_pillars', id), updatedPillar, { merge: true });
+      }
     } catch (e) {
-      console.warn('Firestore updateDoc solution_pillars:', e);
+      console.warn('Firestore setDoc solution_pillars:', e);
     }
   };
 
   const deleteSolutionPillar = async (id: string) => {
-    setSolutionPillars((prev) => prev.filter((p) => p.id !== id));
+    setSolutionPillars((prev) => {
+      const next = prev.filter((p) => p.id !== id);
+      setLocalCache('tecnideas_cached_solution_pillars', next);
+      return next;
+    });
     try {
       await deleteDoc(doc(db, 'solution_pillars', id));
     } catch (e) {
@@ -636,7 +770,11 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const addSede = async (sede: Omit<Sede, 'id'>) => {
     const id = 'sede-' + Date.now();
     const newSede = { ...sede, id };
-    setSedes((prev) => [...prev, newSede]);
+    setSedes((prev) => {
+      const next = [...prev, newSede];
+      setLocalCache('tecnideas_cached_sedes', next);
+      return next;
+    });
     try {
       await setDoc(doc(db, 'sedes', id), newSede);
     } catch (e) {
@@ -645,16 +783,29 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const updateSede = async (id: string, sede: Partial<Sede>) => {
-    setSedes((prev) => prev.map((s) => (s.id === id ? { ...s, ...sede } : s)));
+    let updatedSede: Sede | null = null;
+    setSedes((prev) => {
+      const existing = prev.find((s) => s.id === id);
+      updatedSede = existing ? { ...existing, ...sede, id } : ({ ...sede, id } as Sede);
+      const next = prev.map((s) => (s.id === id ? updatedSede! : s));
+      setLocalCache('tecnideas_cached_sedes', next);
+      return next;
+    });
     try {
-      await updateDoc(doc(db, 'sedes', id), sede);
+      if (updatedSede) {
+        await setDoc(doc(db, 'sedes', id), updatedSede, { merge: true });
+      }
     } catch (e) {
-      console.warn('Firestore updateDoc sedes:', e);
+      console.warn('Firestore setDoc sedes:', e);
     }
   };
 
   const deleteSede = async (id: string) => {
-    setSedes((prev) => prev.filter((s) => s.id !== id));
+    setSedes((prev) => {
+      const next = prev.filter((s) => s.id !== id);
+      setLocalCache('tecnideas_cached_sedes', next);
+      return next;
+    });
     try {
       await deleteDoc(doc(db, 'sedes', id));
     } catch (e) {
@@ -666,7 +817,11 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const addWorkspaceSpace = async (space: Omit<WorkspaceSpace, 'id'>) => {
     const id = 'space-' + Date.now();
     const newSpace = { ...space, id };
-    setWorkspaceSpaces((prev) => [...prev, newSpace]);
+    setWorkspaceSpaces((prev) => {
+      const next = [...prev, newSpace];
+      setLocalCache('tecnideas_cached_workspace_spaces', next);
+      return next;
+    });
     try {
       await setDoc(doc(db, 'workspace_spaces', id), newSpace);
     } catch (e) {
@@ -675,16 +830,29 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const updateWorkspaceSpace = async (id: string, space: Partial<WorkspaceSpace>) => {
-    setWorkspaceSpaces((prev) => prev.map((sp) => (sp.id === id ? { ...sp, ...space } : sp)));
+    let updatedSpace: WorkspaceSpace | null = null;
+    setWorkspaceSpaces((prev) => {
+      const existing = prev.find((sp) => sp.id === id);
+      updatedSpace = existing ? { ...existing, ...space, id } : ({ ...space, id } as WorkspaceSpace);
+      const next = prev.map((sp) => (sp.id === id ? updatedSpace! : sp));
+      setLocalCache('tecnideas_cached_workspace_spaces', next);
+      return next;
+    });
     try {
-      await updateDoc(doc(db, 'workspace_spaces', id), space);
+      if (updatedSpace) {
+        await setDoc(doc(db, 'workspace_spaces', id), updatedSpace, { merge: true });
+      }
     } catch (e) {
-      console.warn('Firestore updateDoc workspace_spaces:', e);
+      console.warn('Firestore setDoc workspace_spaces:', e);
     }
   };
 
   const deleteWorkspaceSpace = async (id: string) => {
-    setWorkspaceSpaces((prev) => prev.filter((sp) => sp.id !== id));
+    setWorkspaceSpaces((prev) => {
+      const next = prev.filter((sp) => sp.id !== id);
+      setLocalCache('tecnideas_cached_workspace_spaces', next);
+      return next;
+    });
     try {
       await deleteDoc(doc(db, 'workspace_spaces', id));
     } catch (e) {
