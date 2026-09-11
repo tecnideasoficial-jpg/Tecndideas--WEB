@@ -4,6 +4,7 @@ import { LandingPage } from './components/LandingPage';
 import { ServicesShowroom } from './components/ServicesShowroom';
 import { SolutionCalculator } from './components/SolutionCalculator';
 import { PortfolioShowcase } from './components/PortfolioShowcase';
+import { FAQSection } from './components/FAQSection';
 import { StoreCatalog } from './components/StoreCatalog';
 import { WorkspaceSection } from './components/WorkspaceSection';
 import { CapacitacionSection } from './components/CapacitacionSection';
@@ -151,7 +152,7 @@ export default function App() {
                 onTabChange={handleShowroomTabChange}
               />
               <PortfolioShowcase />
-              <SolutionCalculator />
+              <FAQSection />
             </div>
           )}
 
