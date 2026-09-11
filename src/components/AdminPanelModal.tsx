@@ -20,7 +20,13 @@ import {
   GraduationCap,
   MapPin,
   Building2,
-  Globe
+  Globe,
+  Bot,
+  Code,
+  FileCheck,
+  Printer,
+  Briefcase,
+  Users
 } from 'lucide-react';
 import { useAdminData } from '../context/AdminDataContext';
 import { 
@@ -107,6 +113,7 @@ export const AdminPanelModal: React.FC = () => {
   // Editing state for Digital Service
   const [editingService, setEditingService] = useState<Partial<ServiceItem> | null>(null);
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
+  const [serviceFeaturesText, setServiceFeaturesText] = useState('');
 
   // Editing state for Course
   const [editingCourse, setEditingCourse] = useState<Partial<Course> | null>(null);
@@ -208,11 +215,13 @@ export const AdminPanelModal: React.FC = () => {
 
     if (editingCategory.id) {
       await updateCategory(editingCategory.id, editingCategory);
+      showNotification(`¡Categoría "${editingCategory.label}" actualizada correctamente!`);
     } else {
       await addCategory({
         label: editingCategory.label,
         order: Number(editingCategory.order) || categories.length + 1
       });
+      showNotification(`¡Categoría "${editingCategory.label}" creada correctamente!`);
     }
     setIsCategoryModalOpen(false);
     setEditingCategory(null);
@@ -227,6 +236,7 @@ export const AdminPanelModal: React.FC = () => {
 
     if (editingVideo.id) {
       await updateYoutubeVideo(editingVideo.id, { ...editingVideo, thumbnail: thumb });
+      showNotification(`¡Video "${editingVideo.title}" actualizado con éxito!`);
     } else {
       await addYoutubeVideo({
         title: editingVideo.title || '',
@@ -236,6 +246,7 @@ export const AdminPanelModal: React.FC = () => {
         url: editingVideo.url || 'https://youtube.com',
         description: editingVideo.description || ''
       });
+      showNotification(`¡Video "${editingVideo.title}" añadido al catálogo!`);
     }
     setIsVideoModalOpen(false);
     setEditingVideo(null);
@@ -244,28 +255,51 @@ export const AdminPanelModal: React.FC = () => {
   // Service Save
   const handleSaveService = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingService?.title) return;
-
-    const featArray = typeof editingService.features === 'string'
-      ? (editingService.features as string).split('\n').map(s => s.trim()).filter(Boolean)
-      : editingService.features || [];
-
-    if (editingService.id) {
-      await updateDigitalService(editingService.id, { ...editingService, features: featArray });
-    } else {
-      await addDigitalService({
-        title: editingService.title || '',
-        category: (editingService.category as any) || 'digital',
-        description: editingService.description || '',
-        badge: editingService.badge || '',
-        iconName: editingService.iconName || 'Globe',
-        features: featArray,
-        priceStart: editingService.priceStart || '$500.000 COP',
-        idealFor: editingService.idealFor || 'Emprendedores y Pymes'
-      });
+    if (!editingService?.title?.trim()) {
+      showNotification('Por favor escribe un título para el servicio.');
+      return;
     }
-    setIsServiceModalOpen(false);
-    setEditingService(null);
+
+    const featArray = serviceFeaturesText
+      .split('\n')
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    try {
+      if (editingService.id) {
+        await updateDigitalService(editingService.id, {
+          ...editingService,
+          title: editingService.title.trim(),
+          category: (editingService.category as any) || 'digital',
+          description: editingService.description || '',
+          priceStart: editingService.priceStart || '$500.000 COP',
+          badge: editingService.badge || '',
+          iconName: editingService.iconName || 'Globe',
+          idealFor: editingService.idealFor || 'Emprendedores y Pymes',
+          popular: !!editingService.popular,
+          features: featArray
+        });
+        showNotification(`¡Servicio "${editingService.title}" modificado y guardado con éxito!`);
+      } else {
+        await addDigitalService({
+          title: editingService.title.trim(),
+          category: (editingService.category as any) || 'digital',
+          description: editingService.description || '',
+          badge: editingService.badge || '',
+          iconName: editingService.iconName || 'Globe',
+          features: featArray,
+          priceStart: editingService.priceStart || '$500.000 COP',
+          popular: !!editingService.popular,
+          idealFor: editingService.idealFor || 'Emprendedores y Pymes'
+        });
+        showNotification(`¡Nuevo servicio "${editingService.title}" creado y publicado!`);
+      }
+      setIsServiceModalOpen(false);
+      setEditingService(null);
+    } catch (err: any) {
+      console.error('Error saving digital service:', err);
+      showNotification('Error al guardar el servicio digital');
+    }
   };
 
   // Course Save
@@ -286,6 +320,7 @@ export const AdminPanelModal: React.FC = () => {
         imageUrl: img,
         topics: topicsArr
       });
+      showNotification(`¡Curso "${editingCourse.title}" actualizado con éxito!`);
     } else {
       await addCourse({
         title: editingCourse.title || 'Nuevo Taller',
@@ -299,6 +334,7 @@ export const AdminPanelModal: React.FC = () => {
         imageUrl: img,
         topics: topicsArr
       });
+      showNotification(`¡Curso "${editingCourse.title}" creado con éxito!`);
     }
     setIsCourseModalOpen(false);
     setEditingCourse(null);
@@ -319,6 +355,7 @@ export const AdminPanelModal: React.FC = () => {
         ...editingPillar,
         features: featuresArr
       });
+      showNotification(`¡Pilar de Solución "${editingPillar.title}" actualizado!`);
     } else {
       await addSolutionPillar({
         title: editingPillar.title || 'Nueva Solución',
@@ -330,6 +367,7 @@ export const AdminPanelModal: React.FC = () => {
         buttonText: editingPillar.buttonText || 'Ver Detalles',
         features: featuresArr
       });
+      showNotification(`¡Pilar de Solución "${editingPillar.title}" creado!`);
     }
     setIsPillarModalOpen(false);
     setEditingPillar(null);
@@ -342,6 +380,7 @@ export const AdminPanelModal: React.FC = () => {
 
     if (editingSede.id) {
       await updateSede(editingSede.id, editingSede);
+      showNotification(`¡Sede "${editingSede.name}" actualizada con éxito!`);
     } else {
       await addSede({
         name: editingSede.name || '',
@@ -354,6 +393,7 @@ export const AdminPanelModal: React.FC = () => {
         mapUrl: editingSede.mapUrl || '',
         description: editingSede.description || ''
       });
+      showNotification(`¡Sede "${editingSede.name}" creada con éxito!`);
     }
     setIsSedeModalOpen(false);
     setEditingSede(null);
@@ -374,6 +414,7 @@ export const AdminPanelModal: React.FC = () => {
         ...editingWorkspaceSpace,
         amenities: amenitiesArr
       });
+      showNotification(`¡Espacio "${editingWorkspaceSpace.name}" actualizado con éxito!`);
     } else {
       await addWorkspaceSpace({
         name: editingWorkspaceSpace.name || 'Nuevo Espacio Workspace',
@@ -384,6 +425,7 @@ export const AdminPanelModal: React.FC = () => {
         imageUrl: editingWorkspaceSpace.imageUrl || 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80',
         amenities: amenitiesArr.length > 0 ? amenitiesArr : ['Internet 300 Mbps', 'Café & Té ilimitado', 'Silla ergonómica']
       });
+      showNotification(`¡Espacio "${editingWorkspaceSpace.name}" creado con éxito!`);
     }
     setIsWorkspaceModalOpen(false);
     setEditingWorkspaceSpace(null);
@@ -694,12 +736,14 @@ export const AdminPanelModal: React.FC = () => {
                       title: '',
                       category: 'digital',
                       description: '',
-                      priceStart: '$999.000 COP',
+                      priceStart: '$500.000 COP',
                       badge: 'Nuevo',
                       features: [],
                       iconName: 'Globe',
-                      idealFor: ''
+                      idealFor: 'Emprendedores y Pymes',
+                      popular: false
                     });
+                    setServiceFeaturesText('Diseño Responsivo UI/UX\nOptimización SEO & Velocidad\nIntegración WhatsApp y Pasarela');
                     setIsServiceModalOpen(true);
                   }}
                   className="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-cyan-500/20 cursor-pointer"
@@ -961,6 +1005,9 @@ export const AdminPanelModal: React.FC = () => {
                           <button
                             onClick={() => {
                               setEditingService(srv);
+                              setServiceFeaturesText(
+                                srv.features && Array.isArray(srv.features) ? srv.features.join('\n') : ''
+                              );
                               setIsServiceModalOpen(true);
                             }}
                             className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold flex items-center gap-1 cursor-pointer"
@@ -971,7 +1018,10 @@ export const AdminPanelModal: React.FC = () => {
 
                           <button
                             onClick={() => {
-                              if (confirm(`¿Eliminar servicio ${srv.title}?`)) deleteDigitalService(srv.id);
+                              if (confirm(`¿Eliminar servicio ${srv.title}?`)) {
+                                deleteDigitalService(srv.id);
+                                showNotification(`Servicio "${srv.title}" eliminado correctamente.`);
+                              }
                             }}
                             className="px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 text-xs font-bold flex items-center gap-1 cursor-pointer"
                           >
@@ -1027,7 +1077,10 @@ export const AdminPanelModal: React.FC = () => {
 
                           <button
                             onClick={() => {
-                              if (confirm(`¿Eliminar el curso ${crs.title}?`)) deleteCourse(crs.id);
+                              if (confirm(`¿Eliminar el curso ${crs.title}?`)) {
+                                deleteCourse(crs.id);
+                                showNotification(`Curso "${crs.title}" eliminado.`);
+                              }
                             }}
                             className="px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 text-xs font-bold flex items-center gap-1 cursor-pointer"
                           >
@@ -1086,7 +1139,10 @@ export const AdminPanelModal: React.FC = () => {
 
                           <button
                             onClick={() => {
-                              if (confirm(`¿Eliminar pilar ${pil.title}?`)) deleteSolutionPillar(pil.id);
+                              if (confirm(`¿Eliminar pilar ${pil.title}?`)) {
+                                deleteSolutionPillar(pil.id);
+                                showNotification(`Pilar "${pil.title}" eliminado.`);
+                              }
                             }}
                             className="px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 text-xs font-bold flex items-center gap-1 cursor-pointer"
                           >
@@ -1138,7 +1194,10 @@ export const AdminPanelModal: React.FC = () => {
 
                           <button
                             onClick={() => {
-                              if (confirm(`¿Eliminar la sede ${sd.name}?`)) deleteSede(sd.id);
+                              if (confirm(`¿Eliminar la sede ${sd.name}?`)) {
+                                deleteSede(sd.id);
+                                showNotification(`Sede "${sd.name}" eliminada.`);
+                              }
                             }}
                             className="px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 text-xs font-bold flex items-center gap-1 cursor-pointer"
                           >
@@ -1226,6 +1285,7 @@ export const AdminPanelModal: React.FC = () => {
                             onClick={() => {
                               if (confirm(`¿Eliminar el espacio de coworking "${space.name}"?`)) {
                                 deleteWorkspaceSpace(space.id);
+                                showNotification(`Espacio "${space.name}" eliminado.`);
                               }
                             }}
                             className="px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
@@ -1541,6 +1601,190 @@ export const AdminPanelModal: React.FC = () => {
                   className="px-4 py-2 rounded-xl bg-cyan-500 text-slate-950 font-bold text-xs cursor-pointer"
                 >
                   Guardar Video
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* DIGITAL SERVICE FORM MODAL */}
+      {isServiceModalOpen && editingService && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-slate-900 border border-slate-700 p-6 space-y-4 text-white">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div>
+                <h4 className="text-lg font-bold text-cyan-400 flex items-center gap-2">
+                  <Globe className="w-5 h-5 text-cyan-400" />
+                  <span>{editingService.id ? 'Editar Servicio Digital / Solución' : 'Nuevo Servicio Digital / Solución'}</span>
+                </h4>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Configura las tarifas, características y categoría para el catálogo de servicios de Tecnideas.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsServiceModalOpen(false);
+                  setEditingService(null);
+                }}
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveService} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold mb-1 text-slate-200">
+                  Nombre del Servicio <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ej: Agentes IA y Chatbots WhatsApp, Desarrollo Web & E-Commerce"
+                  value={editingService.title || ''}
+                  onChange={(e) => setEditingService({ ...editingService, title: e.target.value })}
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-cyan-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold mb-1 text-slate-200">Categoría del Servicio</label>
+                  <select
+                    value={editingService.category || 'digital'}
+                    onChange={(e) => setEditingService({ ...editingService, category: e.target.value as any })}
+                    className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-cyan-500"
+                  >
+                    <option value="digital">Servicios Digitales & IA</option>
+                    <option value="tradicional">Centro Tradicional & Trámites</option>
+                    <option value="ecosistema">Ecosistema Tecnideas 360°</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold mb-1 text-slate-200">Tarifa / Precio Inicial</label>
+                  <input
+                    type="text"
+                    placeholder="Ej: Desde $500.000 COP o $1.200.000 COP"
+                    value={editingService.priceStart || ''}
+                    onChange={(e) => setEditingService({ ...editingService, priceStart: e.target.value })}
+                    className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-cyan-500 font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold mb-1 text-slate-200">Icono Representativo</label>
+                  <select
+                    value={editingService.iconName || 'Globe'}
+                    onChange={(e) => setEditingService({ ...editingService, iconName: e.target.value })}
+                    className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-cyan-500"
+                  >
+                    <option value="Globe">🌐 Web / Digital (Globe)</option>
+                    <option value="Bot">🤖 Agentes IA & Chatbots (Bot)</option>
+                    <option value="ShoppingBag">🛍️ E-Commerce & Tienda (ShoppingBag)</option>
+                    <option value="Code">💻 Desarrollo de Software & App (Code)</option>
+                    <option value="Search">🔍 SEO, Tráfico & Google (Search)</option>
+                    <option value="Users">👥 CRM, Clientes & Ventas (Users)</option>
+                    <option value="Printer">🖨️ Impresión, Copiado & Papelería (Printer)</option>
+                    <option value="FileCheck">📑 Trámites, Visas & Certificados (FileCheck)</option>
+                    <option value="Building2">🏢 Coworking & Espacios (Building2)</option>
+                    <option value="GraduationCap">🎓 Capacitación & Cursos (GraduationCap)</option>
+                    <option value="Briefcase">💼 Consultoría Empresarial (Briefcase)</option>
+                    <option value="Sparkles">✨ Solución 360° Personalizada (Sparkles)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold mb-1 text-slate-200">Etiqueta Destacada (Badge)</label>
+                  <input
+                    type="text"
+                    placeholder="Ej: Más Vendido, Revolucionario, Nuevo, Pyme"
+                    value={editingService.badge || ''}
+                    onChange={(e) => setEditingService({ ...editingService, badge: e.target.value })}
+                    className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-cyan-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-center">
+                <div>
+                  <label className="block text-xs font-bold mb-1 text-slate-200">Público Objetivo / Ideal Para</label>
+                  <input
+                    type="text"
+                    placeholder="Ej: Emprendedores, Negocios Locales y Profesionales"
+                    value={editingService.idealFor || ''}
+                    onChange={(e) => setEditingService({ ...editingService, idealFor: e.target.value })}
+                    className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-cyan-500"
+                  />
+                </div>
+
+                <div className="pt-2 md:pt-4">
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none bg-slate-950/70 p-2.5 rounded-xl border border-slate-800 hover:border-slate-700 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={!!editingService.popular}
+                      onChange={(e) => setEditingService({ ...editingService, popular: e.target.checked })}
+                      className="w-4 h-4 rounded text-cyan-500 focus:ring-cyan-500 bg-slate-900 border-slate-700 cursor-pointer"
+                    />
+                    <span className="text-xs font-bold text-slate-200">
+                      ⭐ Marcar como Servicio Destacado / Popular
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold mb-1 text-slate-200">Descripción del Servicio</label>
+                <textarea
+                  rows={2}
+                  placeholder="Describe de qué trata el servicio y el valor que entrega al cliente..."
+                  value={editingService.description || ''}
+                  onChange={(e) => setEditingService({ ...editingService, description: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-cyan-500 resize-none"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-slate-200">
+                    Características / Qué Incluye (Una por renglón)
+                  </label>
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    {serviceFeaturesText.split('\n').filter(s => s.trim()).length} características
+                  </span>
+                </div>
+                <textarea
+                  rows={4}
+                  placeholder={"Diseño Responsivo UI/UX Mobile-First\nIntegración de WhatsApp para Cierre de Ventas\nOptimización de Velocidad y SEO en Google\nSoporte y Mantenimiento Incluido"}
+                  value={serviceFeaturesText}
+                  onChange={(e) => setServiceFeaturesText(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-cyan-500 font-mono text-xs"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Presiona Enter para agregar cada entregable o beneficio. Se verán reflejados como viñetas de verificación en la web.
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsServiceModalOpen(false);
+                    setEditingService(null);
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300 transition-colors cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs shadow-lg shadow-cyan-500/20 transition-all cursor-pointer"
+                >
+                  {editingService.id ? 'Guardar Cambios del Servicio' : 'Crear y Publicar Servicio'}
                 </button>
               </div>
             </form>

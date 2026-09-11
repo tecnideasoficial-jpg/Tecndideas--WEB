@@ -551,6 +551,17 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setIsAdminPanelOpen(false);
   };
 
+  // Helper to remove undefined fields before sending to Firestore
+  const stripUndefined = <T extends Record<string, any>>(obj: T): T => {
+    const result: any = {};
+    for (const [key, value] of Object.entries(obj)) {
+      if (value !== undefined) {
+        result[key] = value;
+      }
+    }
+    return result as T;
+  };
+
   // CRUD for Store Items
   const addStoreItem = async (item: Omit<StoreItem, 'id'>) => {
     const id = 'prod-' + Date.now();
@@ -561,7 +572,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       return next;
     });
     try {
-      await setDoc(doc(db, 'store_items', id), newItem);
+      await setDoc(doc(db, 'store_items', id), stripUndefined(newItem));
     } catch (e) {
       console.warn('Firestore setDoc store_items:', e);
     }
@@ -578,7 +589,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     });
     try {
       if (updatedItem) {
-        await setDoc(doc(db, 'store_items', id), updatedItem, { merge: true });
+        await setDoc(doc(db, 'store_items', id), stripUndefined(updatedItem), { merge: true });
       }
     } catch (e) {
       console.warn('Firestore setDoc store_items:', e);
@@ -608,7 +619,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       return next;
     });
     try {
-      await setDoc(doc(db, 'categories', id), newCat);
+      await setDoc(doc(db, 'categories', id), stripUndefined(newCat));
     } catch (e) {
       console.warn('Firestore setDoc categories:', e);
     }
@@ -625,7 +636,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     });
     try {
       if (updatedCat) {
-        await setDoc(doc(db, 'categories', id), updatedCat, { merge: true });
+        await setDoc(doc(db, 'categories', id), stripUndefined(updatedCat), { merge: true });
       }
     } catch (e) {
       console.warn('Firestore setDoc categories:', e);
@@ -655,7 +666,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       return next;
     });
     try {
-      await setDoc(doc(db, 'youtube_videos', id), newVideo);
+      await setDoc(doc(db, 'youtube_videos', id), stripUndefined(newVideo));
     } catch (e) {
       console.warn('Firestore setDoc youtube_videos:', e);
     }
@@ -672,7 +683,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     });
     try {
       if (updatedVideo) {
-        await setDoc(doc(db, 'youtube_videos', id), updatedVideo, { merge: true });
+        await setDoc(doc(db, 'youtube_videos', id), stripUndefined(updatedVideo), { merge: true });
       }
     } catch (e) {
       console.warn('Firestore setDoc youtube_videos:', e);
@@ -695,14 +706,25 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // CRUD for Digital Services
   const addDigitalService = async (service: Omit<ServiceItem, 'id'>) => {
     const id = 'srv-' + Date.now();
-    const newService = { ...service, id };
+    const newService: ServiceItem = {
+      id,
+      title: service.title,
+      category: service.category || 'digital',
+      description: service.description || '',
+      badge: service.badge || '',
+      iconName: service.iconName || 'Globe',
+      features: service.features || [],
+      priceStart: service.priceStart || '$500.000 COP',
+      popular: service.popular ?? false,
+      idealFor: service.idealFor || ''
+    };
     setDigitalServices((prev) => {
       const next = [newService, ...prev];
       setLocalCache('tecnideas_cached_digital_services', next);
       return next;
     });
     try {
-      await setDoc(doc(db, 'digital_services', id), newService);
+      await setDoc(doc(db, 'digital_services', id), stripUndefined(newService));
     } catch (e) {
       console.warn('Firestore setDoc digital_services:', e);
     }
@@ -719,7 +741,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     });
     try {
       if (updatedService) {
-        await setDoc(doc(db, 'digital_services', id), updatedService, { merge: true });
+        await setDoc(doc(db, 'digital_services', id), stripUndefined(updatedService), { merge: true });
       }
     } catch (e) {
       console.warn('Firestore setDoc digital_services:', e);
@@ -749,7 +771,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       return next;
     });
     try {
-      await setDoc(doc(db, 'courses', id), newCourse);
+      await setDoc(doc(db, 'courses', id), stripUndefined(newCourse));
     } catch (e) {
       console.warn('Firestore setDoc courses:', e);
     }
@@ -766,7 +788,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     });
     try {
       if (updatedCourse) {
-        await setDoc(doc(db, 'courses', id), updatedCourse, { merge: true });
+        await setDoc(doc(db, 'courses', id), stripUndefined(updatedCourse), { merge: true });
       }
     } catch (e) {
       console.warn('Firestore setDoc courses:', e);
@@ -796,7 +818,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       return next;
     });
     try {
-      await setDoc(doc(db, 'solution_pillars', id), newPillar);
+      await setDoc(doc(db, 'solution_pillars', id), stripUndefined(newPillar));
     } catch (e) {
       console.warn('Firestore setDoc solution_pillars:', e);
     }
@@ -813,7 +835,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     });
     try {
       if (updatedPillar) {
-        await setDoc(doc(db, 'solution_pillars', id), updatedPillar, { merge: true });
+        await setDoc(doc(db, 'solution_pillars', id), stripUndefined(updatedPillar), { merge: true });
       }
     } catch (e) {
       console.warn('Firestore setDoc solution_pillars:', e);
@@ -843,7 +865,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       return next;
     });
     try {
-      await setDoc(doc(db, 'sedes', id), newSede);
+      await setDoc(doc(db, 'sedes', id), stripUndefined(newSede));
     } catch (e) {
       console.warn('Firestore setDoc sedes:', e);
     }
@@ -860,7 +882,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     });
     try {
       if (updatedSede) {
-        await setDoc(doc(db, 'sedes', id), updatedSede, { merge: true });
+        await setDoc(doc(db, 'sedes', id), stripUndefined(updatedSede), { merge: true });
       }
     } catch (e) {
       console.warn('Firestore setDoc sedes:', e);
@@ -890,7 +912,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       return next;
     });
     try {
-      await setDoc(doc(db, 'workspace_spaces', id), newSpace);
+      await setDoc(doc(db, 'workspace_spaces', id), stripUndefined(newSpace));
     } catch (e) {
       console.warn('Firestore setDoc workspace_spaces:', e);
     }
@@ -907,7 +929,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     });
     try {
       if (updatedSpace) {
-        await setDoc(doc(db, 'workspace_spaces', id), updatedSpace, { merge: true });
+        await setDoc(doc(db, 'workspace_spaces', id), stripUndefined(updatedSpace), { merge: true });
       }
     } catch (e) {
       console.warn('Firestore setDoc workspace_spaces:', e);

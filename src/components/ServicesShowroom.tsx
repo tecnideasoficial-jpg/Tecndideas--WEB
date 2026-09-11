@@ -65,7 +65,6 @@ export const ServicesShowroom: React.FC<ServicesShowroomProps> = ({
       case 'Building2': return <Building2 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />;
       case 'GraduationCap': return <GraduationCap className="w-5 h-5 text-amber-600 dark:text-amber-400" />;
       case 'Briefcase': return <Briefcase className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />;
-      case 'ShoppingBag': return <ShoppingBag className="w-5 h-5 text-purple-600 dark:text-purple-400" />;
       default: return <Sparkles className="w-5 h-5 text-blue-500" />;
     }
   };
