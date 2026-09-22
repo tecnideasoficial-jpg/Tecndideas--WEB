@@ -716,7 +716,9 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       features: service.features || [],
       priceStart: service.priceStart || '$500.000 COP',
       popular: service.popular ?? false,
-      idealFor: service.idealFor || ''
+      idealFor: service.idealFor || '',
+      demoUrl: service.demoUrl || '',
+      demoButtonText: service.demoButtonText || 'Ver Demo'
     };
     setDigitalServices((prev) => {
       const next = [newService, ...prev];

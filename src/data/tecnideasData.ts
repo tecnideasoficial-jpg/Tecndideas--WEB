@@ -84,6 +84,8 @@ export const DIGITAL_SERVICES: ServiceItem[] = [
     popular: true,
     priceStart: '$999.000 COP',
     idealFor: 'Empresas y profesionales que buscan proyectar autoridad absoluta y captar clientes calificados.',
+    demoUrl: 'https://preview.themeforest.net',
+    demoButtonText: 'Ver Demo en Vivo',
     features: [
       'Diseño personalizado 100% exclusivo (Sin plantillas genéricas)',
       'Optimización de carga ultrarrápida (Core Web Vitals 95+)',
@@ -101,6 +103,8 @@ export const DIGITAL_SERVICES: ServiceItem[] = [
     iconName: 'ShoppingBag',
     priceStart: '$1.850.000 COP',
     idealFor: 'Negocios que venden productos físicos o digitales y desean automatizar ventas y despachos.',
+    demoUrl: 'https://demo.vercel.store',
+    demoButtonText: 'Probar Tienda Demo',
     features: [
       'Pasarelas de pago colombianas e internacionales',
       'Cálculo automático de envíos por transportadora',
@@ -119,6 +123,8 @@ export const DIGITAL_SERVICES: ServiceItem[] = [
     popular: true,
     priceStart: '$1.200.000 COP',
     idealFor: 'Negocios con alto volumen de mensajes que pierden ventas por demoras en respuesta.',
+    demoUrl: 'https://wa.me/573024171818?text=Hola%2C%20quiero%20probar%20el%20Agente%20de%20IA%20de%20demostracion%20en%20WhatsApp',
+    demoButtonText: 'Probar Bot en WhatsApp',
     features: [
       'Agente conversacional alimentado con tu catálogo y PDFs',
       'Integración directa a la API oficial de WhatsApp',
@@ -135,6 +141,8 @@ export const DIGITAL_SERVICES: ServiceItem[] = [
     iconName: 'Users',
     priceStart: '$850.000 COP',
     idealFor: 'Equipos comerciales que necesitan seguimiento sistemático de prospectos.',
+    demoUrl: 'https://hubspot.com',
+    demoButtonText: 'Ver Demo de Embudo',
     features: [
       'Configuración de embudo comercial a medida',
       'Automatización de seguimiento post-cotización',
@@ -150,6 +158,8 @@ export const DIGITAL_SERVICES: ServiceItem[] = [
     iconName: 'Search',
     priceStart: '$650.000 COP/mes',
     idealFor: 'Empresas que quieren tráfico orgánico cualificado constante.',
+    demoUrl: 'https://lookerstudio.google.com',
+    demoButtonText: 'Ver Reporte Demo',
     features: [
       'SEO Técnico + Auditoría de palabras clave estratégicas',
       'Google My Business local en Medellín y alrededores',
@@ -165,6 +175,8 @@ export const DIGITAL_SERVICES: ServiceItem[] = [
     iconName: 'Code',
     priceStart: '$3.500.000 COP',
     idealFor: 'Empresas con procesos operativos únicos o ideas de negocios digitales avanzadas.',
+    demoUrl: 'https://github.com',
+    demoButtonText: 'Ver Demo del Panel',
     features: [
       'Arquitectura en la nube escalable y segura',
       'APIs REST / GraphQL integradas a tus sistemas actuales',

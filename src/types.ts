@@ -11,6 +11,8 @@ export interface ServiceItem {
   priceStart: string;
   popular?: boolean;
   idealFor: string;
+  demoUrl?: string;
+  demoButtonText?: string;
 }
 
 export interface PortfolioItem {

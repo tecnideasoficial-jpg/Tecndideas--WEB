@@ -277,6 +277,8 @@ export const AdminPanelModal: React.FC = () => {
           iconName: editingService.iconName || 'Globe',
           idealFor: editingService.idealFor || 'Emprendedores y Pymes',
           popular: !!editingService.popular,
+          demoUrl: (editingService.demoUrl || '').trim(),
+          demoButtonText: (editingService.demoButtonText || '').trim() || 'Ver Demo',
           features: featArray
         });
         showNotification(`¡Servicio "${editingService.title}" modificado y guardado con éxito!`);
@@ -290,7 +292,9 @@ export const AdminPanelModal: React.FC = () => {
           features: featArray,
           priceStart: editingService.priceStart || '$500.000 COP',
           popular: !!editingService.popular,
-          idealFor: editingService.idealFor || 'Emprendedores y Pymes'
+          idealFor: editingService.idealFor || 'Emprendedores y Pymes',
+          demoUrl: (editingService.demoUrl || '').trim(),
+          demoButtonText: (editingService.demoButtonText || '').trim() || 'Ver Demo'
         });
         showNotification(`¡Nuevo servicio "${editingService.title}" creado y publicado!`);
       }
@@ -741,7 +745,9 @@ export const AdminPanelModal: React.FC = () => {
                       features: [],
                       iconName: 'Globe',
                       idealFor: 'Emprendedores y Pymes',
-                      popular: false
+                      popular: false,
+                      demoUrl: '',
+                      demoButtonText: 'Ver Demo'
                     });
                     setServiceFeaturesText('Diseño Responsivo UI/UX\nOptimización SEO & Velocidad\nIntegración WhatsApp y Pasarela');
                     setIsServiceModalOpen(true);
@@ -1000,6 +1006,26 @@ export const AdminPanelModal: React.FC = () => {
                         </div>
 
                         <p className="text-xs text-slate-300 line-clamp-2">{srv.description}</p>
+
+                        {/* Demo URL indicator */}
+                        <div className="flex items-center gap-2 pt-1 text-[11px] font-mono">
+                          <span className="px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-800/60 text-cyan-300 font-sans font-bold text-[10px]">
+                            Botón: "{srv.demoButtonText || 'Ver Demo'}"
+                          </span>
+                          {srv.demoUrl ? (
+                            <a
+                              href={srv.demoUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-cyan-400 hover:underline truncate max-w-[200px]"
+                              title={srv.demoUrl}
+                            >
+                              🔗 {srv.demoUrl}
+                            </a>
+                          ) : (
+                            <span className="text-slate-500 italic">Sin URL de demo configurada</span>
+                          )}
+                        </div>
 
                         <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
                           <button
@@ -1734,6 +1760,57 @@ export const AdminPanelModal: React.FC = () => {
                       ⭐ Marcar como Servicio Destacado / Popular
                     </span>
                   </label>
+                </div>
+              </div>
+
+              {/* DEMO / DESTINO CONFIGURATION */}
+              <div className="p-4 rounded-xl bg-cyan-950/30 border border-cyan-800/50 space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="p-1 rounded bg-cyan-500/20 text-cyan-400">
+                    <ExternalLink className="w-4 h-4" />
+                  </span>
+                  <div>
+                    <h5 className="text-xs font-bold text-cyan-300">
+                      Configuración del Botón "Demo" / Destino Interactivo
+                    </h5>
+                    <p className="text-[11px] text-slate-400">
+                      Personaliza a dónde dirige el botón principal de la tarjeta (enlace de demostración, prueba en vivo, WhatsApp, etc.).
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold mb-1 text-slate-200">
+                      Texto del Botón (Sugerencias: "Ver Demo", "Demos", "Probar en Vivo", "Ver Ejemplo")
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej: Ver Demo en Vivo, Probar Tienda Demo, Probar Bot"
+                      value={editingService.demoButtonText ?? ''}
+                      onChange={(e) => setEditingService({ ...editingService, demoButtonText: e.target.value })}
+                      className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-cyan-500"
+                    />
+                    <span className="text-[10px] text-slate-400 mt-0.5 block">
+                      Por defecto se mostrará: <strong>"Ver Demo"</strong>
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold mb-1 text-slate-200">
+                      URL de Destino (Link de la Demo o Prueba)
+                    </label>
+                    <input
+                      type="url"
+                      placeholder="https://ejemplo.com/demo o https://wa.me/573024171818"
+                      value={editingService.demoUrl || ''}
+                      onChange={(e) => setEditingService({ ...editingService, demoUrl: e.target.value })}
+                      className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm text-cyan-300 focus:outline-none focus:border-cyan-500 font-mono"
+                    />
+                    <span className="text-[10px] text-slate-400 mt-0.5 block">
+                      Pega aquí la URL completa a donde viajará el cliente al hacer clic.
+                    </span>
+                  </div>
                 </div>
               </div>
 
