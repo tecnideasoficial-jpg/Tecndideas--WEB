@@ -62,13 +62,15 @@ const StoreProductCard: React.FC<StoreProductCardProps> = ({
   onOrderWhatsApp
 }) => {
   // Collect images array (minimum 1)
-  const images = (item.images && item.images.length > 0)
-    ? item.images
-    : [item.imageUrl || 'https://images.unsplash.com/photo-1562654501-a0ccc0fc3fb1?auto=format&fit=crop&w=800&q=80'];
+  const images = (Array.isArray(item.images) && item.images.length > 0)
+    ? item.images.filter(Boolean)
+    : (item.imageUrl ? [item.imageUrl] : ['https://images.unsplash.com/photo-1562654501-a0ccc0fc3fb1?auto=format&fit=crop&w=800&q=80']);
 
   const [currentIdx, setCurrentIdx] = useState(0);
   const [isAuto, setIsAuto] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
+
+  const safeIdx = currentIdx < images.length ? currentIdx : 0;
 
   // Auto rotation effect
   useEffect(() => {
@@ -113,9 +115,9 @@ const StoreProductCard: React.FC<StoreProductCardProps> = ({
         {/* Image / Carousel Area */}
         <div className="relative h-52 sm:h-56 overflow-hidden bg-slate-950 select-none">
           <img
-            key={currentIdx}
-            src={images[currentIdx]}
-            alt={`${item.name} - ${currentIdx + 1}`}
+            key={safeIdx}
+            src={images[safeIdx]}
+            alt={`${item.name} - ${safeIdx + 1}`}
             onError={(e) => {
               (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1562654501-a0ccc0fc3fb1?auto=format&fit=crop&w=800&q=80';
             }}
@@ -174,7 +176,7 @@ const StoreProductCard: React.FC<StoreProductCardProps> = ({
                       type="button"
                       onClick={(e) => handleDotClick(e, dotIdx)}
                       className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                        dotIdx === currentIdx
+                        dotIdx === safeIdx
                           ? 'w-4 bg-cyan-400'
                           : 'w-1.5 bg-white/40 hover:bg-white/80'
                       }`}
@@ -182,7 +184,7 @@ const StoreProductCard: React.FC<StoreProductCardProps> = ({
                     />
                   ))}
                   <span className="text-[9px] font-mono text-slate-300 ml-1">
-                    {currentIdx + 1}/{images.length}
+                    {safeIdx + 1}/{images.length}
                   </span>
                 </div>
 
@@ -272,12 +274,14 @@ const ProductSalesLandingModal: React.FC<ProductSalesLandingModalProps> = ({
   onClose,
   onOrderWhatsApp
 }) => {
-  const images = (item.images && item.images.length > 0)
-    ? item.images
-    : [item.imageUrl || 'https://images.unsplash.com/photo-1562654501-a0ccc0fc3fb1?auto=format&fit=crop&w=800&q=80'];
+  const images = (Array.isArray(item.images) && item.images.length > 0)
+    ? item.images.filter(Boolean)
+    : (item.imageUrl ? [item.imageUrl] : ['https://images.unsplash.com/photo-1562654501-a0ccc0fc3fb1?auto=format&fit=crop&w=800&q=80']);
 
   const [activeMediaTab, setActiveMediaTab] = useState<'photos' | 'video'>(item.videoUrl ? 'video' : 'photos');
   const [selectedPhotoIdx, setSelectedPhotoIdx] = useState(0);
+
+  const safePhotoIdx = selectedPhotoIdx < images.length ? selectedPhotoIdx : 0;
 
   const embedUrl = getVideoEmbedUrl(item.videoUrl);
 
@@ -370,8 +374,8 @@ const ProductSalesLandingModal: React.FC<ProductSalesLandingModalProps> = ({
                   /* High-Res Photo View with interactive controls */
                   <div className="relative w-full h-full">
                     <img
-                      src={images[selectedPhotoIdx]}
-                      alt={`${item.name} - Vista ${selectedPhotoIdx + 1}`}
+                      src={images[safePhotoIdx]}
+                      alt={`${item.name} - Vista ${safePhotoIdx + 1}`}
                       className="w-full h-full object-cover"
                     />
 
@@ -395,7 +399,7 @@ const ProductSalesLandingModal: React.FC<ProductSalesLandingModalProps> = ({
                     )}
 
                     <div className="absolute bottom-3 right-3 px-2.5 py-1 rounded bg-slate-950/80 backdrop-blur-md text-white text-[10px] font-mono border border-white/20">
-                      Foto {selectedPhotoIdx + 1} de {images.length}
+                      Foto {safePhotoIdx + 1} de {images.length}
                     </div>
                   </div>
                 )}
@@ -410,7 +414,7 @@ const ProductSalesLandingModal: React.FC<ProductSalesLandingModalProps> = ({
                       type="button"
                       onClick={() => setSelectedPhotoIdx(thumbIdx)}
                       className={`relative w-16 h-16 rounded-xl overflow-hidden shrink-0 border-2 transition-all cursor-pointer ${
-                        selectedPhotoIdx === thumbIdx
+                        safePhotoIdx === thumbIdx
                           ? 'border-blue-600 scale-95 shadow-md ring-2 ring-blue-500/30'
                           : 'border-slate-200 dark:border-slate-800 opacity-60 hover:opacity-100'
                       }`}

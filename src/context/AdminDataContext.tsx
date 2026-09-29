@@ -160,22 +160,9 @@ function setLocalCache<T>(key: string, data: T) {
 }
 
 export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [storeItems, setStoreItems] = useState<StoreItem[]>(() => {
-    const cached = getLocalCache<StoreItem[]>('tecnideas_cached_store_items', STORE_ITEMS);
-    return cached.map(c => {
-      const defaultItem = STORE_ITEMS.find(s => s.id === c.id);
-      return {
-        ...defaultItem,
-        ...c,
-        images: c.images && c.images.length > 0 ? c.images : (defaultItem?.images || [c.imageUrl || defaultItem?.imageUrl || '']),
-        videoUrl: c.videoUrl !== undefined ? c.videoUrl : defaultItem?.videoUrl,
-        salesPitch: c.salesPitch || defaultItem?.salesPitch,
-        longDescription: c.longDescription || defaultItem?.longDescription,
-        guaranteeText: c.guaranteeText || defaultItem?.guaranteeText,
-        deliverables: c.deliverables || defaultItem?.deliverables
-      } as StoreItem;
-    });
-  });
+  const [storeItems, setStoreItems] = useState<StoreItem[]>(() => 
+    getLocalCache<StoreItem[]>('tecnideas_cached_store_items', STORE_ITEMS)
+  );
   const [categories, setCategories] = useState<StoreCategory[]>(() => 
     getLocalCache('tecnideas_cached_categories', INITIAL_CATEGORIES)
   );
@@ -225,31 +212,35 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'store_items'), async (snapshot) => {
       if (snapshot.empty) {
-        setStoreItems(STORE_ITEMS);
-        setLocalCache('tecnideas_cached_store_items', STORE_ITEMS);
-        try {
-          for (const item of STORE_ITEMS) {
-            await setDoc(doc(db, 'store_items', item.id), item);
+        const hasInitialized = localStorage.getItem('tecnideas_store_seeded');
+        if (!hasInitialized) {
+          setStoreItems(STORE_ITEMS);
+          setLocalCache('tecnideas_cached_store_items', STORE_ITEMS);
+          localStorage.setItem('tecnideas_store_seeded', 'true');
+          try {
+            for (const item of STORE_ITEMS) {
+              await setDoc(doc(db, 'store_items', item.id), item);
+            }
+          } catch (e) {
+            console.warn('Could not auto-seed store_items to Firestore:', e);
           }
-        } catch (e) {
-          console.warn('Could not auto-seed store_items to Firestore:', e);
+        } else {
+          setStoreItems([]);
+          setLocalCache('tecnideas_cached_store_items', []);
         }
       } else {
+        localStorage.setItem('tecnideas_store_seeded', 'true');
         const items: StoreItem[] = [];
         snapshot.forEach((docSnap) => {
-          const data = docSnap.data() as Partial<StoreItem>;
-          const defaultItem = STORE_ITEMS.find((s) => s.id === docSnap.id);
+          const data = docSnap.data() as StoreItem;
           items.push({
-            ...defaultItem,
             ...data,
             id: docSnap.id,
-            images: data.images && data.images.length > 0 ? data.images : (defaultItem?.images || [data.imageUrl || defaultItem?.imageUrl || '']),
-            videoUrl: data.videoUrl !== undefined ? data.videoUrl : defaultItem?.videoUrl,
-            salesPitch: data.salesPitch || defaultItem?.salesPitch,
-            longDescription: data.longDescription || defaultItem?.longDescription,
-            guaranteeText: data.guaranteeText || defaultItem?.guaranteeText,
-            deliverables: data.deliverables || defaultItem?.deliverables
-          } as StoreItem);
+            features: Array.isArray(data.features) ? data.features : [],
+            images: Array.isArray(data.images) && data.images.length > 0
+              ? data.images
+              : (data.imageUrl ? [data.imageUrl] : [])
+          });
         });
         setStoreItems(items);
         setLocalCache('tecnideas_cached_store_items', items);
@@ -614,7 +605,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     });
     try {
       if (updatedItem) {
-        await setDoc(doc(db, 'store_items', id), stripUndefined(updatedItem), { merge: true });
+        await setDoc(doc(db, 'store_items', id), stripUndefined(updatedItem));
       }
     } catch (e) {
       console.warn('Firestore setDoc store_items:', e);

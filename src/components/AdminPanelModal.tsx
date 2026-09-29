@@ -175,6 +175,60 @@ export const AdminPanelModal: React.FC = () => {
     }
   };
 
+  // Helpers to isolate product editing and prevent state bleed across publications
+  const handleOpenNewProduct = () => {
+    setEditingProduct({
+      name: '',
+      price: 0,
+      category: 'impresion_digitacion',
+      type: 'servicio',
+      currency: 'COP',
+      description: '',
+      badge: '',
+      features: [],
+      imageUrl: '',
+      images: [],
+      videoUrl: '',
+      salesPitch: '',
+      longDescription: '',
+      guaranteeText: ''
+    });
+    setNewProductImageUrl('');
+    setIsProductModalOpen(true);
+  };
+
+  const handleOpenEditProduct = (item: StoreItem) => {
+    const imagesList = Array.isArray(item.images) && item.images.length > 0
+      ? [...item.images]
+      : (item.imageUrl ? [item.imageUrl] : []);
+
+    setEditingProduct({
+      id: item.id,
+      name: item.name || '',
+      category: item.category || 'impresion_digitacion',
+      type: item.type || 'servicio',
+      price: item.price ?? 0,
+      currency: item.currency || 'COP',
+      description: item.description || '',
+      badge: item.badge || '',
+      features: Array.isArray(item.features) ? [...item.features] : [],
+      imageUrl: item.imageUrl || imagesList[0] || '',
+      images: imagesList,
+      videoUrl: item.videoUrl || '',
+      salesPitch: item.salesPitch || '',
+      longDescription: item.longDescription || '',
+      guaranteeText: item.guaranteeText || ''
+    });
+    setNewProductImageUrl('');
+    setIsProductModalOpen(true);
+  };
+
+  const handleCloseProductModal = () => {
+    setIsProductModalOpen(false);
+    setEditingProduct(null);
+    setNewProductImageUrl('');
+  };
+
   // Product Save
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -182,28 +236,26 @@ export const AdminPanelModal: React.FC = () => {
 
     const featArray = typeof editingProduct.features === 'string'
       ? (editingProduct.features as string).split('\n').map(s => s.trim()).filter(Boolean)
-      : editingProduct.features || [];
+      : (Array.isArray(editingProduct.features) ? editingProduct.features : []);
 
     const numericPrice = Number(editingProduct.price) || 0;
 
-    // Collect and clean images list
-    let imgList = editingProduct.images && editingProduct.images.length > 0
-      ? editingProduct.images.filter(Boolean)
-      : [];
-    if (editingProduct.imageUrl && !imgList.includes(editingProduct.imageUrl)) {
-      imgList = [editingProduct.imageUrl, ...imgList];
+    // Use images array strictly as the single source of truth - do not resurrect deleted images
+    let imgList = (editingProduct.images || []).map(s => s?.trim()).filter(Boolean) as string[];
+    if (imgList.length === 0 && editingProduct.imageUrl?.trim()) {
+      imgList = [editingProduct.imageUrl.trim()];
     }
-    if (imgList.length === 0 && editingProduct.imageUrl) {
-      imgList = [editingProduct.imageUrl];
-    }
-    if (imgList.length === 0) {
-      imgList = ['https://images.unsplash.com/photo-1562654501-a0ccc0fc3fb1?auto=format&fit=crop&w=800&q=80'];
-    }
+    const primaryImage = imgList[0] || '';
 
     const payload: Partial<StoreItem> = {
-      ...editingProduct,
+      name: editingProduct.name.trim(),
+      category: editingProduct.category,
+      type: (editingProduct.type as any) || 'servicio',
       price: numericPrice,
-      imageUrl: imgList[0],
+      currency: editingProduct.currency || 'COP',
+      description: editingProduct.description ? editingProduct.description.trim() : '',
+      badge: editingProduct.badge ? editingProduct.badge.trim() : '',
+      imageUrl: primaryImage,
       images: imgList,
       videoUrl: editingProduct.videoUrl ? editingProduct.videoUrl.trim() : '',
       salesPitch: editingProduct.salesPitch ? editingProduct.salesPitch.trim() : '',
@@ -219,9 +271,7 @@ export const AdminPanelModal: React.FC = () => {
       await addStoreItem(payload as Omit<StoreItem, 'id'>);
       showNotification('¡Nuevo producto y landing page añadidos al catálogo!');
     }
-    setIsProductModalOpen(false);
-    setEditingProduct(null);
-    setNewProductImageUrl('');
+    handleCloseProductModal();
   };
 
   // Category Save
@@ -715,20 +765,7 @@ export const AdminPanelModal: React.FC = () => {
 
               {activeTab === 'products' && (
                 <button
-                  onClick={() => {
-                    setEditingProduct({
-                      name: '',
-                      price: 15000,
-                      category: 'impresion_digitacion',
-                      type: 'servicio',
-                      currency: 'COP',
-                      description: '',
-                      badge: 'Nuevo',
-                      features: [],
-                      imageUrl: 'https://images.unsplash.com/photo-1586281380349-632531db7ed4?auto=format&fit=crop&w=800&q=80'
-                    });
-                    setIsProductModalOpen(true);
-                  }}
+                  onClick={handleOpenNewProduct}
                   className="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-cyan-500/20 cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
@@ -946,10 +983,7 @@ export const AdminPanelModal: React.FC = () => {
 
                         <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
                           <button
-                            onClick={() => {
-                              setEditingProduct(item);
-                              setIsProductModalOpen(true);
-                            }}
+                            onClick={() => handleOpenEditProduct(item)}
                             className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
                           >
                             <Edit3 className="w-3.5 h-3.5 text-cyan-400" />
@@ -1432,7 +1466,7 @@ export const AdminPanelModal: React.FC = () => {
               </div>
               <button
                 type="button"
-                onClick={() => setIsProductModalOpen(false)}
+                onClick={handleCloseProductModal}
                 className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors"
               >
                 <X className="w-4 h-4" />
@@ -1739,7 +1773,7 @@ export const AdminPanelModal: React.FC = () => {
               <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
                 <button
                   type="button"
-                  onClick={() => setIsProductModalOpen(false)}
+                  onClick={handleCloseProductModal}
                   className="px-4 py-2 rounded-xl bg-slate-800 text-xs font-bold hover:bg-slate-700 text-slate-300 transition-colors cursor-pointer"
                 >
                   Cancelar
