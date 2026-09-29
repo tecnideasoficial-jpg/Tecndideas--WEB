@@ -389,7 +389,26 @@ export const STORE_ITEMS: StoreItem[] = [
     currency: 'COP',
     description: 'Diseño web moderno, responsivo, optimizado para conversión con dominio .com y hosting por 1 año incluido.',
     imageUrl: 'https://images.unsplash.com/photo-1467232004584-a241de8bcf5d?auto=format&fit=crop&w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1467232004584-a241de8bcf5d?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80'
+    ],
+    videoUrl: 'https://www.youtube.com/watch?v=ScMzIvxBSi4',
     badge: 'Popular',
+    salesPitch: 'Tu presencia digital de nivel internacional para captar prospectos calificados en Medellín y Colombia.',
+    longDescription: 'No te limites a una plantilla genérica que se ve idéntica a tu competencia. En Tecnideas construimos tu sitio web con arquitectura ultrarrápida, optimizada para buscadores (SEO) y con diseño responsive para que tus clientes vivan una experiencia de compra impecable tanto en celulares como en computadores. Te entregamos un panel administrable intuitivo para que cambies fotos, precios y textos sin depender de terceros.',
+    guaranteeText: 'Garantía total de satisfacción con soporte presencial en Medellín (Barrio Castilla) y acompañamiento continuo.',
+    deliverables: [
+      'Diseño exclusivo a medida adaptado a tu manual de marca',
+      'Hasta 5 secciones completas (Inicio, Nosotros, Servicios, Galería/Casos, Contacto)',
+      'Dominio corporativo (.com o .co) incluido por el primer año',
+      'Hosting SSD de ultra alta velocidad con certificado de seguridad SSL',
+      'Botón interactivo directo a WhatsApp con mensaje automático',
+      'Optimización de carga rápida (Google Core Web Vitals 95+)',
+      'Panel autoadministrable fácil de usar y capacitación incluida'
+    ],
     features: [
       'Hasta 5 secciones personalizadas',
       'Formulario de contacto + Botón WhatsApp',
@@ -407,7 +426,23 @@ export const STORE_ITEMS: StoreItem[] = [
     currency: 'COP',
     description: 'Asistente de IA entrenado para responder en WhatsApp Business con los productos y servicios de tu negocio.',
     imageUrl: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1611746872915-64382b5c76da?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1556742049-0a67c5574f73?auto=format&fit=crop&w=1200&q=80'
+    ],
+    videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
     badge: 'Innovación IA',
+    salesPitch: 'No dejes escapar ninguna venta: un asistente inteligente que responde y califica prospectos las 24 horas del día.',
+    longDescription: 'Conecta tu WhatsApp Business con un agente de Inteligencia Artificial que comprende el lenguaje cotidiano, resuelve dudas sobre tus servicios, muestra catálogos y agenda citas de forma natural. Reduce tiempos de espera a menos de 5 segundos y deriva al asesor humano solo cuando el prospecto esté listo para pagar.',
+    guaranteeText: '3 meses de soporte técnico, ajustes de prompts y reentrenamiento incluidos sin costo adicional.',
+    deliverables: [
+      'Conexión a la API oficial de WhatsApp Business',
+      'Entrenamiento con la documentación oficial de tu negocio (PDFs, precios, FAQs)',
+      'Flujo de calificación de prospectos y agendamiento automático',
+      'Derivación inteligente a asesores humanos cuando se requiere',
+      'Panel de visualización y métricas de interacciones'
+    ],
     features: [
       'Entrenamiento personalizado con tus PDFs/catálogos',
       'Atención 24 horas 7 días a la semana',
@@ -424,7 +459,23 @@ export const STORE_ITEMS: StoreItem[] = [
     currency: 'COP',
     description: 'Diseño, redacción y estructuración profesional de Hoja de Vida adaptada a convocatorias laborales y estándares ATS.',
     imageUrl: 'https://images.unsplash.com/photo-1586281380349-632531db7ed4?auto=format&fit=crop&w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1586281380349-632531db7ed4?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1512486130939-2c4f79935e4f?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&w=1200&q=80'
+    ],
+    videoUrl: 'https://www.youtube.com/watch?v=ScMzIvxBSi4',
     badge: 'Nueva',
+    salesPitch: 'Destaca de inmediato frente a los reclutadores con un perfil laboral contundente y formato de alto impacto.',
+    longDescription: 'Estructuramos tu currículum vitae con redacción profesional de logros, optimizado para pasar los filtros automáticos ATS de las plataformas de empleo y diseñado con elegancia ejecutiva. Te entregamos la versión digital en PDF editable de alta resolución más la versión física impresa en papel de máxima blancura.',
+    guaranteeText: 'Revisión y ajustes sin costo durante las primeras 48 horas tras la entrega.',
+    deliverables: [
+      'Redacción y pulido de perfil profesional por expertos',
+      'Diseño moderno y limpio compatible con filtros ATS',
+      'Archivo digital PDF vectorial de alta definición',
+      'Impresión física de cortesía en papel fino bond',
+      'Envío inmediato a tu correo y WhatsApp'
+    ],
     features: [
       'Formato digital PDF editable + versión impresa',
       'Redacción de perfil profesional enfocado',
@@ -441,7 +492,22 @@ export const STORE_ITEMS: StoreItem[] = [
     currency: 'COP',
     description: 'Servicio de impresión, fotocopias rápida B/N y Color, digitación de documentos y escáner de alta definición.',
     imageUrl: 'https://images.unsplash.com/photo-1562654501-a0ccc0fc3fb1?auto=format&fit=crop&w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1562654501-a0ccc0fc3fb1?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1586075010923-2dd4570fb338?auto=format&fit=crop&w=1200&q=80'
+    ],
     badge: 'Desde $500',
+    salesPitch: '29 años siendo el centro de copiado e impresiones más confiable y rápido en Medellín.',
+    longDescription: 'Imprime desde tu celular, correo o memoria USB sin filas ni complicaciones. Contamos con maquinaria láser de alta velocidad industrial que garantiza nitidez perfecta en textos, planos, carteles y fotografías. Ofrecemos además argollado doble cero, plastificado térmico y encuadernación corporativa.',
+    guaranteeText: 'Revisión minuciosa antes de entrega: si alguna hoja presenta defecto, se reimprime sin costo.',
+    deliverables: [
+      'Formatos Carta, Oficio, Tabloide y especiales',
+      'Impresión láser B/N y color de alta gama',
+      'Argollado con tapas plásticas de alta resistencia',
+      'Plastificado térmico de documentos oficiales',
+      'Tarifas preferenciales por volumen'
+    ],
     features: [
       'Impresión desde USB, Correo o WhatsApp al instante',
       'Formatos Carta, Oficio, Tabloide y especiales',
@@ -458,7 +524,21 @@ export const STORE_ITEMS: StoreItem[] = [
     currency: 'COP',
     description: 'Mantenimiento preventivo, revisión física, optimización de velocidad y formateo de computadores y laptops.',
     imageUrl: 'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80'
+    ],
     badge: 'Servicio Técnico',
+    salesPitch: 'Devuélvele la velocidad y rendimiento a tu equipo de trabajo con diagnóstico preventivo integral.',
+    longDescription: 'Servicio técnico especializado para computadores portátiles y de escritorio: limpieza física interna, cambio de pasta térmica de alto rendimiento, optimización del sistema operativo, desinfección de virus y asesoría para repotenciación con discos de estado sólido (SSD) y memoria RAM.',
+    guaranteeText: '30 días de garantía en mano de obra y soporte telefónico directo.',
+    deliverables: [
+      'Limpieza de ventiladores, disipadores y chasis',
+      'Aplicación de pasta térmica prémium para evitar sobrecalentamiento',
+      'Optimización de inicio y limpieza de software malicioso',
+      'Informe detallado de salud de disco duro y batería'
+    ],
     features: [
       'Limpieza interna y cambio de crema térmica',
       'Eliminación de virus y software malicioso',
@@ -473,8 +553,20 @@ export const STORE_ITEMS: StoreItem[] = [
     type: 'producto',
     price: 45000,
     currency: 'COP',
-    description: 'Periféricos de computación: tecleados, mouses ergonómicos, cables HDMI, cargadores, memorias USB y accesorios.',
+    description: 'Periféricos de computación: teclados, mouses ergonómicos, cables HDMI, cargadores, memorias USB y accesorios.',
     imageUrl: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?auto=format&fit=crop&w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=1200&q=80'
+    ],
+    salesPitch: 'Accesorios probados para asegurar productividad y comodidad en tu oficina o estudio.',
+    longDescription: 'Suministros y periféricos certificados para optimizar tu estación de trabajo en Medellín. Todos nuestros productos han sido testeados previamente para garantizar durabilidad, compatibilidad inmediata y conectividad sin fallos.',
+    guaranteeText: 'Garantía directa de cambio inmediato por defectos de fábrica.',
+    deliverables: [
+      'Productos nuevos en empaque original sellado',
+      'Prueba de funcionamiento en nuestra sede de Castilla',
+      'Factura de compra y garantía local'
+    ],
     features: [
       'Garantía directa de funcionamiento Tecnideas',
       'Productos probados para oficina y hogar',
@@ -490,7 +582,19 @@ export const STORE_ITEMS: StoreItem[] = [
     currency: 'COP',
     description: 'Resma de papel bond blanco de 75g/m² especial para fotocopiadoras, impresoras láser e inyección de tinta.',
     imageUrl: 'https://images.unsplash.com/photo-1586075010923-2dd4570fb338?auto=format&fit=crop&w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1586075010923-2dd4570fb338?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=1200&q=80'
+    ],
     badge: 'Insumo Calidad',
+    salesPitch: 'Papel ecológico de alta blancura y 75g que previene atascos en cualquier impresora.',
+    longDescription: 'Resma de 500 hojas tamaño carta con blancura uniforme y acabado suave para impresiones nítidas a doble faz. Ideal para oficinas, notarías, juzgados, colegios y uso doméstico.',
+    guaranteeText: 'Calidad 100% garantizada libre de polvo y atascos.',
+    deliverables: [
+      '500 hojas tamaño carta estándar (21.6 x 27.9 cm)',
+      'Empaque protector anti-humedad',
+      'Entrega inmediata en sede o a domicilio en Medellín'
+    ],
     features: [
       '500 Hojas blancas tamaño Carta (21.6 x 27.9 cm)',
       'Papel ecológico de alta blancura sin atascos',
@@ -506,6 +610,18 @@ export const STORE_ITEMS: StoreItem[] = [
     currency: 'COP',
     description: 'Carpetas legajadoras, sobres manila, ganchos legajadores, cuadernos y suministros esenciales para oficina y estudio.',
     imageUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1586075010923-2dd4570fb338?auto=format&fit=crop&w=1200&q=80'
+    ],
+    salesPitch: 'Todo lo que requieres para organizar expedientes, trámites o tu oficina en un solo kit.',
+    longDescription: 'Conjunto completo de papelería corporativa para archivo y presentación de documentos legales, médicos o empresariales. Elementos resistentes diseñados para conservar la integridad física de tus papeles durante años.',
+    guaranteeText: 'Materiales durables y de calidad certificada.',
+    deliverables: [
+      'Carpetas legajadoras de cartón kraft reforzado',
+      'Ganchos legajadores plásticos de alta seguridad',
+      'Sobres manila tamaño oficio y carta'
+    ],
     features: [
       'Carpetas legajadoras y sobres de protección',
       'Insumos para oficina, trámites y colegio',
@@ -521,6 +637,23 @@ export const STORE_ITEMS: StoreItem[] = [
     currency: 'COP',
     description: 'Acceso a puesto flexible en nuestro coworking en Medellín con internet de fibra óptica dedicada, café y salas de reuniones.',
     imageUrl: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1431540015161-0bf868a2d407?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=1200&q=80'
+    ],
+    videoUrl: 'https://www.youtube.com/watch?v=ScMzIvxBSi4',
+    badge: 'Membresía Mensual',
+    salesPitch: 'Trabaja en un entorno inspirador y profesional en Medellín sin costos fijos astronómicos.',
+    longDescription: 'Tecnideas Workspace te ofrece la comodidad de una oficina ejecutiva en Barrio Castilla: internet simétrico de fibra óptica a 300 Mbps, mobiliario ergonómico, café y té ilimitado, y 4 horas incluidas al mes en nuestra Sala de Juntas con pantalla 4K de 65" para que sorprendas a tus clientes.',
+    guaranteeText: 'Prueba 1 día sin compromiso. Si no te convence, no pagas el mes.',
+    deliverables: [
+      'Puesto de trabajo flexible de lunes a sábado',
+      'Internet simétrico 300 Mbps de máxima estabilidad',
+      '4 horas al mes de Sala de Juntas ejecutiva',
+      'Estación de café gourmet, aromática y agua pura',
+      '15% de descuento en todos los servicios de copiado e impresión'
+    ],
     features: [
       'Acceso Lunes a Sábado',
       'Internet simétrico 300 Mbps',
@@ -537,7 +670,23 @@ export const STORE_ITEMS: StoreItem[] = [
     currency: 'COP',
     description: 'Taller práctico de 8 horas en nuestro Centro de Capacitación para dominar Gemini, ChatGPT y automatizaciones en tu negocio.',
     imageUrl: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=1200&q=80'
+    ],
+    videoUrl: 'https://www.youtube.com/watch?v=ScMzIvxBSi4',
     badge: 'Cupos Limitados',
+    salesPitch: 'Aprende a multiplicar tu productividad y ventas utilizando herramientas de IA prácticas desde el primer día.',
+    longDescription: 'Taller presencial en grupos reducidos dictado en nuestras instalaciones en Medellín. Aprenderás a escribir prompts efectivos para generar contenido publicitario, crear agentes para WhatsApp, automatizar tareas repetitivas y utilizar la Inteligencia Artificial como un empleado más en tu pyme.',
+    guaranteeText: 'Si en las primeras 2 horas sientes que el curso no aporta valor a tu negocio, te reembolsamos el 100%.',
+    deliverables: [
+      '8 horas de capacitación presencial práctica con casos reales',
+      'Plantilla descargable con más de 100 prompts probados para ventas',
+      'Acceso a la comunidad privada de WhatsApp para resolver dudas',
+      'Certificado de asistencia oficial de Tecnideas',
+      'Refrigerio ejecutivo durante la jornada'
+    ],
     features: [
       'Material de estudio impreso y digital',
       'Certificado de asistencia Tecnideas',

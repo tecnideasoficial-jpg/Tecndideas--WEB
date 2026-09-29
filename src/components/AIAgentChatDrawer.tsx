@@ -47,7 +47,16 @@ export const AIAgentChatDrawer: React.FC<AIAgentChatDrawerProps> = ({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
 
-  if (!isOpen) return null;
+  const formatMessageContent = (text: string) => {
+    // If text contains bold asterisks, render clean elements
+    const parts = text.split(/(\*\*.*?\*\*)/g);
+    return parts.map((part, index) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={index} className="font-bold text-blue-900 dark:text-blue-200">{part.slice(2, -2)}</strong>;
+      }
+      return part;
+    });
+  };
 
   const handleSendMessage = async (textToSend?: string) => {
     const query = textToSend || inputValue.trim();
@@ -92,7 +101,7 @@ export const AIAgentChatDrawer: React.FC<AIAgentChatDrawerProps> = ({
         {
           id: (Date.now() + 1).toString(),
           sender: 'assistant',
-          text: 'Entendido. Si prefieres atención inmediata, también puedes escribirnos directamente por WhatsApp al +57 300 912 8472.',
+          text: 'Entendido. Si prefieres atención inmediata, también puedes escribirnos directamente por WhatsApp al +57 302 417 1818.',
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
       ]);
@@ -100,6 +109,8 @@ export const AIAgentChatDrawer: React.FC<AIAgentChatDrawerProps> = ({
       setIsLoading(false);
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex justify-end animate-in fade-in duration-200">
@@ -170,7 +181,7 @@ export const AIAgentChatDrawer: React.FC<AIAgentChatDrawerProps> = ({
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-tl-none border border-slate-200/60 dark:border-slate-700/60'
                 }`}
               >
-                <p className="whitespace-pre-line">{msg.text}</p>
+                <p className="whitespace-pre-line">{formatMessageContent(msg.text)}</p>
                 <span className={`text-[9px] block text-right mt-1.5 opacity-70`}>
                   {msg.timestamp}
                 </span>

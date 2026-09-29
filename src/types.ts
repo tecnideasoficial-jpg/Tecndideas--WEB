@@ -41,8 +41,15 @@ export interface StoreItem {
   description: string;
   features: string[];
   imageUrl: string;
+  images?: string[];
   badge?: string;
   inStock?: boolean;
+  videoUrl?: string;
+  salesPitch?: string;
+  longDescription?: string;
+  guaranteeText?: string;
+  deliverables?: string[];
+  targetAudience?: string;
 }
 
 export interface TimelineEvent {

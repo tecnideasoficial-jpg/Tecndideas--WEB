@@ -246,11 +246,13 @@ export default function App() {
       <Footer onNavigatePage={handleNavigatePage} />
 
       {/* Floating AI Agent Drawer */}
-      <AIAgentChatDrawer
-        isOpen={isAIAgentOpen}
-        onClose={() => setIsAIAgentOpen(false)}
-        onOpenCalculator={scrollToCalculator}
-      />
+      {isAIAgentOpen && (
+        <AIAgentChatDrawer
+          isOpen={isAIAgentOpen}
+          onClose={() => setIsAIAgentOpen(false)}
+          onOpenCalculator={scrollToCalculator}
+        />
+      )}
 
       {/* Fixed Floating AI Trigger Button on bottom right */}
       {!isAIAgentOpen && (

@@ -160,9 +160,22 @@ function setLocalCache<T>(key: string, data: T) {
 }
 
 export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [storeItems, setStoreItems] = useState<StoreItem[]>(() => 
-    getLocalCache('tecnideas_cached_store_items', STORE_ITEMS)
-  );
+  const [storeItems, setStoreItems] = useState<StoreItem[]>(() => {
+    const cached = getLocalCache<StoreItem[]>('tecnideas_cached_store_items', STORE_ITEMS);
+    return cached.map(c => {
+      const defaultItem = STORE_ITEMS.find(s => s.id === c.id);
+      return {
+        ...defaultItem,
+        ...c,
+        images: c.images && c.images.length > 0 ? c.images : (defaultItem?.images || [c.imageUrl || defaultItem?.imageUrl || '']),
+        videoUrl: c.videoUrl !== undefined ? c.videoUrl : defaultItem?.videoUrl,
+        salesPitch: c.salesPitch || defaultItem?.salesPitch,
+        longDescription: c.longDescription || defaultItem?.longDescription,
+        guaranteeText: c.guaranteeText || defaultItem?.guaranteeText,
+        deliverables: c.deliverables || defaultItem?.deliverables
+      } as StoreItem;
+    });
+  });
   const [categories, setCategories] = useState<StoreCategory[]>(() => 
     getLocalCache('tecnideas_cached_categories', INITIAL_CATEGORIES)
   );
@@ -224,7 +237,19 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       } else {
         const items: StoreItem[] = [];
         snapshot.forEach((docSnap) => {
-          items.push({ id: docSnap.id, ...docSnap.data() } as StoreItem);
+          const data = docSnap.data() as Partial<StoreItem>;
+          const defaultItem = STORE_ITEMS.find((s) => s.id === docSnap.id);
+          items.push({
+            ...defaultItem,
+            ...data,
+            id: docSnap.id,
+            images: data.images && data.images.length > 0 ? data.images : (defaultItem?.images || [data.imageUrl || defaultItem?.imageUrl || '']),
+            videoUrl: data.videoUrl !== undefined ? data.videoUrl : defaultItem?.videoUrl,
+            salesPitch: data.salesPitch || defaultItem?.salesPitch,
+            longDescription: data.longDescription || defaultItem?.longDescription,
+            guaranteeText: data.guaranteeText || defaultItem?.guaranteeText,
+            deliverables: data.deliverables || defaultItem?.deliverables
+          } as StoreItem);
         });
         setStoreItems(items);
         setLocalCache('tecnideas_cached_store_items', items);

@@ -26,7 +26,8 @@ import {
   FileCheck,
   Printer,
   Briefcase,
-  Users
+  Users,
+  Video
 } from 'lucide-react';
 import { useAdminData } from '../context/AdminDataContext';
 import { 
@@ -41,6 +42,7 @@ import {
 } from '../types';
 import { ImageUploader } from './ImageUploader';
 import { MediaLibraryView } from './MediaLibraryView';
+import { getVideoEmbedUrl } from './StoreCatalog';
 
 export const AdminPanelModal: React.FC = () => {
   const {
@@ -101,6 +103,7 @@ export const AdminPanelModal: React.FC = () => {
   // Editing state for Items
   const [editingProduct, setEditingProduct] = useState<Partial<StoreItem> | null>(null);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [newProductImageUrl, setNewProductImageUrl] = useState('');
 
   // Editing state for Category
   const [editingCategory, setEditingCategory] = useState<Partial<StoreCategory> | null>(null);
@@ -183,29 +186,42 @@ export const AdminPanelModal: React.FC = () => {
 
     const numericPrice = Number(editingProduct.price) || 0;
 
+    // Collect and clean images list
+    let imgList = editingProduct.images && editingProduct.images.length > 0
+      ? editingProduct.images.filter(Boolean)
+      : [];
+    if (editingProduct.imageUrl && !imgList.includes(editingProduct.imageUrl)) {
+      imgList = [editingProduct.imageUrl, ...imgList];
+    }
+    if (imgList.length === 0 && editingProduct.imageUrl) {
+      imgList = [editingProduct.imageUrl];
+    }
+    if (imgList.length === 0) {
+      imgList = ['https://images.unsplash.com/photo-1562654501-a0ccc0fc3fb1?auto=format&fit=crop&w=800&q=80'];
+    }
+
+    const payload: Partial<StoreItem> = {
+      ...editingProduct,
+      price: numericPrice,
+      imageUrl: imgList[0],
+      images: imgList,
+      videoUrl: editingProduct.videoUrl ? editingProduct.videoUrl.trim() : '',
+      salesPitch: editingProduct.salesPitch ? editingProduct.salesPitch.trim() : '',
+      longDescription: editingProduct.longDescription ? editingProduct.longDescription.trim() : '',
+      guaranteeText: editingProduct.guaranteeText ? editingProduct.guaranteeText.trim() : '',
+      features: featArray
+    };
+
     if (editingProduct.id) {
-      await updateStoreItem(editingProduct.id, {
-        ...editingProduct,
-        price: numericPrice,
-        features: featArray
-      });
-      showNotification('¡Producto actualizado y guardado correctamente!');
+      await updateStoreItem(editingProduct.id, payload);
+      showNotification('¡Producto y landing page actualizados con éxito en Firebase y Catálogo!');
     } else {
-      await addStoreItem({
-        name: editingProduct.name || '',
-        category: editingProduct.category || 'impresion_digitacion',
-        type: (editingProduct.type as any) || 'servicio',
-        price: numericPrice,
-        currency: editingProduct.currency || 'COP',
-        description: editingProduct.description || '',
-        imageUrl: editingProduct.imageUrl || 'https://images.unsplash.com/photo-1562654501-a0ccc0fc3fb1?auto=format&fit=crop&w=800&q=80',
-        badge: editingProduct.badge || '',
-        features: featArray
-      });
-      showNotification('¡Nuevo producto guardado y añadido al catálogo!');
+      await addStoreItem(payload as Omit<StoreItem, 'id'>);
+      showNotification('¡Nuevo producto y landing page añadidos al catálogo!');
     }
     setIsProductModalOpen(false);
     setEditingProduct(null);
+    setNewProductImageUrl('');
   };
 
   // Category Save
@@ -899,11 +915,25 @@ export const AdminPanelModal: React.FC = () => {
                             <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-slate-900/90 text-cyan-400 text-[10px] font-mono font-bold">
                               {item.category}
                             </span>
-                            {item.badge && (
-                              <span className="absolute top-2 right-2 px-2 py-0.5 rounded bg-amber-500 text-slate-950 text-[10px] font-bold">
-                                {item.badge}
+                            <div className="absolute top-2 right-2 flex items-center gap-1">
+                              {item.badge && (
+                                <span className="px-2 py-0.5 rounded bg-amber-500 text-slate-950 text-[10px] font-bold">
+                                  {item.badge}
+                                </span>
+                              )}
+                            </div>
+                            <div className="absolute bottom-1.5 inset-x-2 flex items-center justify-between text-[9px] font-mono text-white/90">
+                              <span className="px-1.5 py-0.5 rounded bg-black/75 backdrop-blur-xs flex items-center gap-1">
+                                <ImageIcon className="w-2.5 h-2.5 text-cyan-400" />
+                                <span>{(item.images && item.images.length > 0) ? item.images.length : 1} fotos</span>
                               </span>
-                            )}
+                              {item.videoUrl && (
+                                <span className="px-1.5 py-0.5 rounded bg-rose-600/90 backdrop-blur-xs flex items-center gap-1">
+                                  <Video className="w-2.5 h-2.5 text-white" />
+                                  <span>Video</span>
+                                </span>
+                              )}
+                            </div>
                           </div>
                           <div>
                             <h5 className="font-bold text-sm text-white line-clamp-1">{item.name}</h5>
@@ -1389,25 +1419,40 @@ export const AdminPanelModal: React.FC = () => {
 
       {/* PRODUCT FORM MODAL */}
       {isProductModalOpen && editingProduct && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
-          <div className="w-full max-w-xl rounded-2xl bg-slate-900 border border-slate-700 p-6 space-y-4 text-white">
-            <h4 className="text-lg font-bold text-cyan-400">
-              {editingProduct.id ? 'Editar Producto / Servicio' : 'Nuevo Producto / Servicio'}
-            </h4>
-
-            <form onSubmit={handleSaveProduct} className="space-y-3">
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-xs overflow-y-auto">
+          <div className="w-full max-w-2xl rounded-3xl bg-slate-900 border border-slate-700 p-6 space-y-4 text-white max-h-[90vh] overflow-y-auto shadow-2xl my-auto">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div>
-                <label className="block text-xs font-bold mb-1">Nombre</label>
+                <h4 className="text-lg font-bold text-cyan-400">
+                  {editingProduct.id ? 'Editar Producto / Solución Digital' : 'Nuevo Producto / Solución Digital'}
+                </h4>
+                <p className="text-xs text-slate-400">
+                  Configura fotos múltiples (carrusel), link de video y landing page de ventas sin salir de la página.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsProductModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveProduct} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold mb-1">Nombre Comercial del Producto o Servicio</label>
                 <input
                   type="text"
                   required
+                  placeholder="Ej: Plan Sitio Web Corporativo Premium"
                   value={editingProduct.name || ''}
                   onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })}
                   className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold mb-1">Categoría</label>
                   <select
@@ -1428,47 +1473,251 @@ export const AdminPanelModal: React.FC = () => {
                     required
                     value={editingProduct.price ?? 15000}
                     onChange={(e) => setEditingProduct({ ...editingProduct, price: Number(e.target.value) })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white font-mono"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold mb-1">Tipo</label>
+                  <label className="block text-xs font-bold mb-1">Tipo de Ítem</label>
                   <select
                     value={editingProduct.type || 'servicio'}
                     onChange={(e) => setEditingProduct({ ...editingProduct, type: e.target.value as any })}
                     className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white"
                   >
-                    <option value="servicio">Servicio</option>
-                    <option value="producto">Producto</option>
-                    <option value="pase">Pase / Membresía</option>
+                    <option value="servicio">Servicio (Desarrollo, Asesoría, Taller)</option>
+                    <option value="producto">Producto Físico (Papelería, Periféricos)</option>
+                    <option value="pase">Pase / Membresía (Coworking, Impresión)</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold mb-1">Etiqueta / Badge (Opcional)</label>
+                  <label className="block text-xs font-bold mb-1">Insignia / Badge Destacado (Opcional)</label>
                   <input
                     type="text"
-                    placeholder="Ej: Desde $500, Nueva"
+                    placeholder="Ej: Popular, Más Vendido, Innovación IA, Desde $500"
                     value={editingProduct.badge || ''}
                     onChange={(e) => setEditingProduct({ ...editingProduct, badge: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white"
                   />
                 </div>
               </div>
 
-              <ImageUploader
-                value={editingProduct.imageUrl || ''}
-                onChange={(url) => setEditingProduct({ ...editingProduct, imageUrl: url })}
-                label="Foto / Imagen del Producto o Servicio"
-                categoryHint={editingProduct.category}
-                aspectRatioLabel="Espacio de tarjeta de tienda (16:10 / 4:3)"
-              />
+              {/* Multiple Images / Carousel Section */}
+              <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-cyan-400 flex items-center gap-1.5">
+                    <ImageIcon className="w-4 h-4" />
+                    <span>Galería de Múltiples Fotos (Carrusel Rotativo Auto & Manual)</span>
+                  </label>
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    {((editingProduct.images && editingProduct.images.length > 0) ? editingProduct.images : (editingProduct.imageUrl ? [editingProduct.imageUrl] : [])).length} fotos registradas
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  Sube o pega varias fotos. En la tienda rotarán de forma automática y los clientes podrán moverlas una por una manualmente con flechas o puntos.
+                </p>
+
+                {/* Subir imagen principal */}
+                <ImageUploader
+                  value={editingProduct.imageUrl || ''}
+                  onChange={(url) => {
+                    const currentList = editingProduct.images || [];
+                    const nextList = currentList.length > 0 ? [url, ...currentList.filter(u => u !== url)] : [url];
+                    setEditingProduct({
+                      ...editingProduct,
+                      imageUrl: url,
+                      images: nextList
+                    });
+                  }}
+                  label="Subir / Seleccionar Foto Principal (Portada)"
+                  categoryHint={editingProduct.category}
+                  aspectRatioLabel="Espacio de tarjeta de tienda (16:10 / 4:3)"
+                />
+
+                {/* Lista de fotos adicionales de la galería */}
+                {editingProduct.images && editingProduct.images.length > 0 && (
+                  <div className="space-y-2 pt-2 border-t border-slate-800">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">
+                      Fotos en el carrusel interactivo:
+                    </span>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {editingProduct.images.map((imgUrl, idx) => (
+                        <div key={idx} className="relative rounded-xl overflow-hidden border border-slate-700 bg-slate-900 group aspect-video">
+                          <img src={imgUrl} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-slate-950/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 p-1">
+                            <button
+                              type="button"
+                              title="Eliminar de la galería"
+                              onClick={() => {
+                                const nextList = (editingProduct.images || []).filter((_, i) => i !== idx);
+                                setEditingProduct({
+                                  ...editingProduct,
+                                  images: nextList,
+                                  imageUrl: nextList[0] || ''
+                                });
+                              }}
+                              className="p-1 rounded bg-red-600 hover:bg-red-500 text-white cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                            {idx !== 0 && (
+                              <button
+                                type="button"
+                                title="Hacer foto principal"
+                                onClick={() => {
+                                  const filtered = (editingProduct.images || []).filter((_, i) => i !== idx);
+                                  const reordered = [imgUrl, ...filtered];
+                                  setEditingProduct({
+                                    ...editingProduct,
+                                    images: reordered,
+                                    imageUrl: imgUrl
+                                  });
+                                }}
+                                className="px-1.5 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold text-[9px] cursor-pointer"
+                              >
+                                Portada
+                              </button>
+                            )}
+                          </div>
+                          {idx === 0 && (
+                            <span className="absolute bottom-1 left-1 bg-cyan-500 text-slate-950 font-bold text-[8px] px-1.5 py-0.5 rounded shadow">
+                              Portada
+                            </span>
+                          )}
+                          <span className="absolute top-1 right-1 bg-black/70 text-white text-[8px] font-mono px-1 rounded">
+                            #{idx + 1}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Input para agregar URL de foto adicional */}
+                <div className="flex gap-2 pt-1">
+                  <input
+                    type="url"
+                    placeholder="Pegar URL de otra imagen web (https://...)"
+                    value={newProductImageUrl}
+                    onChange={(e) => setNewProductImageUrl(e.target.value)}
+                    className="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-cyan-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!newProductImageUrl.trim()) return;
+                      const trimmed = newProductImageUrl.trim();
+                      const current = editingProduct.images || (editingProduct.imageUrl ? [editingProduct.imageUrl] : []);
+                      if (!current.includes(trimmed)) {
+                        setEditingProduct({
+                          ...editingProduct,
+                          images: [...current, trimmed],
+                          imageUrl: editingProduct.imageUrl || trimmed
+                        });
+                      }
+                      setNewProductImageUrl('');
+                    }}
+                    className="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold cursor-pointer shrink-0 transition-colors"
+                  >
+                    + Agregar Foto
+                  </button>
+                </div>
+              </div>
+
+              {/* Video Link Section with Live Embedded Player */}
+              <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-rose-400 flex items-center gap-1.5">
+                    <Video className="w-4 h-4" />
+                    <span>Link de Video Demostrativo (Landing Page Sin Salirse)</span>
+                  </label>
+                  {editingProduct.videoUrl && (
+                    <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                      ✓ Video Activo
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  Pega el enlace de YouTube o Vimeo. En la ventana de detalles se creará una verdadera landing page donde el cliente podrá reproducir el video directamente sin salir de tu sitio web.
+                </p>
+                <input
+                  type="url"
+                  placeholder="Ej: https://www.youtube.com/watch?v=... o https://youtu.be/..."
+                  value={editingProduct.videoUrl || ''}
+                  onChange={(e) => setEditingProduct({ ...editingProduct, videoUrl: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-rose-500"
+                />
+
+                {/* Previsualizador en vivo del video */}
+                {editingProduct.videoUrl && getVideoEmbedUrl(editingProduct.videoUrl) && (
+                  <div className="pt-2">
+                    <span className="text-[10px] text-slate-400 block mb-1 font-mono">
+                      Previsualización del reproductor embebido:
+                    </span>
+                    <div className="rounded-xl overflow-hidden aspect-video bg-black border border-slate-700 max-h-48 shadow-lg">
+                      <iframe
+                        src={getVideoEmbedUrl(editingProduct.videoUrl)!}
+                        title="Video Preview"
+                        className="w-full h-full border-0"
+                        allowFullScreen
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Sales Landing Page Persuasive Content */}
+              <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+                <span className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4" />
+                  <span>Contenido Persuasivo para la Landing Page de Ventas</span>
+                </span>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold mb-1 text-slate-300">
+                      Gancho Comercial / Subtítulo Persuasivo
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej: Multiplica tus ventas con atención 24/7 en WhatsApp..."
+                      value={editingProduct.salesPitch || ''}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, salesPitch: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold mb-1 text-slate-300">
+                      Texto de Garantía y Confianza
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej: Garantía 100% con soporte presencial en Medellín..."
+                      value={editingProduct.guaranteeText || ''}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, guaranteeText: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold mb-1 text-slate-300">
+                    Descripción Extendida / Argumentos de Venta (Landing)
+                  </label>
+                  <textarea
+                    rows={3}
+                    placeholder="Explica a fondo los beneficios que recibirá el cliente, por qué Tecnideas es su mejor opción y cómo transformará su negocio..."
+                    value={editingProduct.longDescription || ''}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, longDescription: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white"
+                  />
+                </div>
+              </div>
 
               <div>
-                <label className="block text-xs font-bold mb-1">Descripción</label>
+                <label className="block text-xs font-bold mb-1">Descripción Breve (Tarjeta)</label>
                 <textarea
                   rows={2}
                   value={editingProduct.description || ''}
@@ -1478,7 +1727,7 @@ export const AdminPanelModal: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold mb-1">Características (Una por línea)</label>
+                <label className="block text-xs font-bold mb-1">Características y Entregables (Una por línea)</label>
                 <textarea
                   rows={3}
                   value={Array.isArray(editingProduct.features) ? editingProduct.features.join('\n') : (editingProduct.features || '')}
@@ -1487,19 +1736,19 @@ export const AdminPanelModal: React.FC = () => {
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
                 <button
                   type="button"
                   onClick={() => setIsProductModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 text-xs font-bold cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-slate-800 text-xs font-bold hover:bg-slate-700 text-slate-300 transition-colors cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-cyan-500 text-slate-950 font-bold text-xs cursor-pointer"
+                  className="px-6 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs transition-colors cursor-pointer shadow-lg shadow-cyan-500/20"
                 >
-                  Guardar Producto
+                  Guardar Producto & Landing
                 </button>
               </div>
             </form>
