@@ -631,9 +631,11 @@ export const StoreCatalog: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('todos');
   const [selectedItem, setSelectedItem] = useState<StoreItem | null>(null);
 
+  const activeItems = storeItems.filter(item => item.isActive !== false);
+
   const filteredItems = selectedCategory === 'todos'
-    ? storeItems
-    : storeItems.filter(item => item.category === selectedCategory);
+    ? activeItems
+    : activeItems.filter(item => item.category === selectedCategory);
 
   const handleOrderWhatsApp = (itemName: string, price: number) => {
     const text = `Hola Tecnideas, me interesa comprar/adquirir en la Tienda el producto/servicio: *${itemName}* por $${price.toLocaleString()} COP. ¿Cómo procedo con el pago y la entrega?`;

@@ -27,7 +27,9 @@ import {
   Printer,
   Briefcase,
   Users,
-  Video
+  Video,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { useAdminData } from '../context/AdminDataContext';
 import { 
@@ -68,6 +70,7 @@ export const AdminPanelModal: React.FC = () => {
     addStoreItem,
     updateStoreItem,
     deleteStoreItem,
+    toggleStoreItemActive,
     addCategory,
     updateCategory,
     deleteCategory,
@@ -137,6 +140,9 @@ export const AdminPanelModal: React.FC = () => {
   const [isWorkspaceModalOpen, setIsWorkspaceModalOpen] = useState(false);
   const [workspaceAmenitiesText, setWorkspaceAmenitiesText] = useState('');
 
+  // Product filter by active/paused state
+  const [productStatusFilter, setProductStatusFilter] = useState<'all' | 'active' | 'paused'>('all');
+
   // Save Confirmation Toast/Banner
   const [successNotification, setSuccessNotification] = useState<string>('');
 
@@ -191,7 +197,8 @@ export const AdminPanelModal: React.FC = () => {
       videoUrl: '',
       salesPitch: '',
       longDescription: '',
-      guaranteeText: ''
+      guaranteeText: '',
+      isActive: true
     });
     setNewProductImageUrl('');
     setIsProductModalOpen(true);
@@ -217,7 +224,8 @@ export const AdminPanelModal: React.FC = () => {
       videoUrl: item.videoUrl || '',
       salesPitch: item.salesPitch || '',
       longDescription: item.longDescription || '',
-      guaranteeText: item.guaranteeText || ''
+      guaranteeText: item.guaranteeText || '',
+      isActive: item.isActive !== false
     });
     setNewProductImageUrl('');
     setIsProductModalOpen(true);
@@ -261,7 +269,8 @@ export const AdminPanelModal: React.FC = () => {
       salesPitch: editingProduct.salesPitch ? editingProduct.salesPitch.trim() : '',
       longDescription: editingProduct.longDescription ? editingProduct.longDescription.trim() : '',
       guaranteeText: editingProduct.guaranteeText ? editingProduct.guaranteeText.trim() : '',
-      features: featArray
+      features: featArray,
+      isActive: editingProduct.isActive !== false
     };
 
     if (editingProduct.id) {
@@ -937,73 +946,217 @@ export const AdminPanelModal: React.FC = () => {
               )}
               
               {/* 1. PRODUCTS TAB */}
-              {activeTab === 'products' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {storeItems
-                    .filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()) || item.category.includes(searchTerm))
-                    .map((item) => (
-                      <div
-                        key={item.id}
-                        className="rounded-2xl bg-slate-950 border border-slate-800 overflow-hidden flex flex-col justify-between p-4 space-y-3"
-                      >
-                        <div className="space-y-2">
-                          <div className="relative h-28 rounded-xl overflow-hidden bg-slate-900 border border-slate-800">
-                            <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
-                            <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-slate-900/90 text-cyan-400 text-[10px] font-mono font-bold">
-                              {item.category}
-                            </span>
-                            <div className="absolute top-2 right-2 flex items-center gap-1">
-                              {item.badge && (
-                                <span className="px-2 py-0.5 rounded bg-amber-500 text-slate-950 text-[10px] font-bold">
-                                  {item.badge}
-                                </span>
-                              )}
-                            </div>
-                            <div className="absolute bottom-1.5 inset-x-2 flex items-center justify-between text-[9px] font-mono text-white/90">
-                              <span className="px-1.5 py-0.5 rounded bg-black/75 backdrop-blur-xs flex items-center gap-1">
-                                <ImageIcon className="w-2.5 h-2.5 text-cyan-400" />
-                                <span>{(item.images && item.images.length > 0) ? item.images.length : 1} fotos</span>
-                              </span>
-                              {item.videoUrl && (
-                                <span className="px-1.5 py-0.5 rounded bg-rose-600/90 backdrop-blur-xs flex items-center gap-1">
-                                  <Video className="w-2.5 h-2.5 text-white" />
-                                  <span>Video</span>
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <div>
-                            <h5 className="font-bold text-sm text-white line-clamp-1">{item.name}</h5>
-                            <p className="text-xs text-cyan-400 font-bold mt-0.5">
-                              ${item.price.toLocaleString('es-CO')} {item.currency}
-                            </p>
-                            <p className="text-xs text-slate-400 line-clamp-2 mt-1">{item.description}</p>
-                          </div>
-                        </div>
+              {activeTab === 'products' && (() => {
+                const activeCount = storeItems.filter(i => i.isActive !== false).length;
+                const pausedCount = storeItems.filter(i => i.isActive === false).length;
+                const filteredProducts = storeItems
+                  .filter(item => {
+                    if (productStatusFilter === 'active') return item.isActive !== false;
+                    if (productStatusFilter === 'paused') return item.isActive === false;
+                    return true;
+                  })
+                  .filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()) || item.category.includes(searchTerm));
 
-                        <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
-                          <button
-                            onClick={() => handleOpenEditProduct(item)}
-                            className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
-                          >
-                            <Edit3 className="w-3.5 h-3.5 text-cyan-400" />
-                            <span>Editar</span>
-                          </button>
+                return (
+                  <div className="space-y-4">
+                    {/* Status Filters Bar */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900/80 p-3 rounded-2xl border border-slate-800">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => setProductStatusFilter('all')}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                            productStatusFilter === 'all'
+                              ? 'bg-slate-700 text-white shadow-sm'
+                              : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                          }`}
+                        >
+                          Todos ({storeItems.length})
+                        </button>
 
-                          <button
-                            onClick={() => {
-                              if (confirm(`¿Eliminar ${item.name}?`)) deleteStoreItem(item.id);
-                            }}
-                            className="px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span>Eliminar</span>
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setProductStatusFilter('active')}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                            productStatusFilter === 'active'
+                              ? 'bg-emerald-600 text-white shadow-sm'
+                              : 'bg-slate-950 text-emerald-400 hover:text-emerald-300 border border-slate-800'
+                          }`}
+                        >
+                          <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                          <span>Activos en Tienda ({activeCount})</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setProductStatusFilter('paused')}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                            productStatusFilter === 'paused'
+                              ? 'bg-amber-600 text-slate-950 shadow-sm'
+                              : 'bg-slate-950 text-amber-400 hover:text-amber-300 border border-slate-800'
+                          }`}
+                        >
+                          <EyeOff className="w-3.5 h-3.5" />
+                          <span>Pausados / Ocultos ({pausedCount})</span>
+                        </button>
                       </div>
-                    ))}
-                </div>
-              )}
+
+                      <span className="text-[11px] text-slate-400">
+                        Los productos pausados se conservan intactos pero no aparecen en la tienda pública
+                      </span>
+                    </div>
+
+                    {filteredProducts.length === 0 ? (
+                      <div className="p-12 text-center rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
+                        <ShoppingBag className="w-8 h-8 text-slate-600 mx-auto" />
+                        <p className="text-sm font-bold text-slate-400">No se encontraron productos con los filtros actuales</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {filteredProducts.map((item) => {
+                          const isItemActive = item.isActive !== false;
+                          return (
+                            <div
+                              key={item.id}
+                              className={`rounded-2xl bg-slate-950 border overflow-hidden flex flex-col justify-between p-4 space-y-3 transition-all ${
+                                isItemActive
+                                  ? 'border-slate-800 hover:border-slate-700'
+                                  : 'border-amber-500/40 bg-slate-950/80 shadow-md shadow-amber-500/5'
+                              }`}
+                            >
+                              <div className="space-y-2">
+                                <div className="relative h-28 rounded-xl overflow-hidden bg-slate-900 border border-slate-800">
+                                  <img
+                                    src={item.imageUrl}
+                                    alt={item.name}
+                                    className={`w-full h-full object-cover transition-opacity ${!isItemActive ? 'opacity-40 grayscale-[30%]' : ''}`}
+                                  />
+                                  <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-slate-900/90 text-cyan-400 text-[10px] font-mono font-bold">
+                                    {item.category}
+                                  </span>
+
+                                  {/* Status & Badge in top right */}
+                                  <div className="absolute top-2 right-2 flex items-center gap-1">
+                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-sm ${
+                                      isItemActive
+                                        ? 'bg-emerald-500 text-slate-950'
+                                        : 'bg-amber-500 text-slate-950'
+                                    }`}>
+                                      {isItemActive ? (
+                                        <>
+                                          <span className="w-1.5 h-1.5 rounded-full bg-slate-950 animate-pulse" />
+                                          <span>Activo</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <EyeOff className="w-2.5 h-2.5" />
+                                          <span>Pausado</span>
+                                        </>
+                                      )}
+                                    </span>
+
+                                    {item.badge && (
+                                      <span className="px-2 py-0.5 rounded bg-slate-900/90 text-amber-300 text-[10px] font-bold border border-amber-500/20">
+                                        {item.badge}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {/* Paused Watermark Overlay */}
+                                  {!isItemActive && (
+                                    <div className="absolute inset-0 bg-slate-950/30 backdrop-blur-[1px] flex items-center justify-center pointer-events-none">
+                                      <span className="px-2.5 py-1 rounded-lg bg-amber-500/95 text-slate-950 font-extrabold text-[11px] uppercase tracking-wider shadow-lg flex items-center gap-1.5">
+                                        <EyeOff className="w-3.5 h-3.5" />
+                                        <span>Pausado en Tienda</span>
+                                      </span>
+                                    </div>
+                                  )}
+
+                                  <div className="absolute bottom-1.5 inset-x-2 flex items-center justify-between text-[9px] font-mono text-white/90">
+                                    <span className="px-1.5 py-0.5 rounded bg-black/75 backdrop-blur-xs flex items-center gap-1">
+                                      <ImageIcon className="w-2.5 h-2.5 text-cyan-400" />
+                                      <span>{(item.images && item.images.length > 0) ? item.images.length : 1} fotos</span>
+                                    </span>
+                                    {item.videoUrl && (
+                                      <span className="px-1.5 py-0.5 rounded bg-rose-600/90 backdrop-blur-xs flex items-center gap-1">
+                                        <Video className="w-2.5 h-2.5 text-white" />
+                                        <span>Video</span>
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <h5 className="font-bold text-sm text-white line-clamp-1">{item.name}</h5>
+                                  <p className="text-xs text-cyan-400 font-bold mt-0.5">
+                                    ${item.price.toLocaleString('es-CO')} {item.currency}
+                                  </p>
+                                  <p className="text-xs text-slate-400 line-clamp-2 mt-1">{item.description}</p>
+                                </div>
+                              </div>
+
+                              {/* Card Action Controls: Status Switch + Edit + Delete */}
+                              <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-800">
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    const nextActive = !isItemActive;
+                                    await toggleStoreItemActive(item.id);
+                                    showNotification(
+                                      nextActive
+                                        ? `"${item.name}" activado: ahora es visible en la Tienda pública`
+                                        : `"${item.name}" pausado: ocultado de la Tienda sin borrar su información`
+                                    );
+                                  }}
+                                  className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                                    isItemActive
+                                      ? 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30'
+                                      : 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30'
+                                  }`}
+                                  title={isItemActive ? "Pausar producto (ocultar de la tienda)" : "Reactivar producto (mostrar en la tienda)"}
+                                >
+                                  {isItemActive ? (
+                                    <>
+                                      <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                                      <span>Visible</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <EyeOff className="w-3 h-3 text-amber-400" />
+                                      <span>Pausado</span>
+                                    </>
+                                  )}
+                                </button>
+
+                                <div className="flex items-center gap-1.5">
+                                  <button
+                                    onClick={() => handleOpenEditProduct(item)}
+                                    className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                                  >
+                                    <Edit3 className="w-3.5 h-3.5 text-cyan-400" />
+                                    <span>Editar</span>
+                                  </button>
+
+                                  <button
+                                    onClick={() => {
+                                      if (confirm(`¿Eliminar ${item.name}?`)) deleteStoreItem(item.id);
+                                    }}
+                                    className="px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                                    title="Eliminar producto permanentemente"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                    <span>Eliminar</span>
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* 2. CATEGORIES TAB */}
               {activeTab === 'categories' && (
@@ -1474,6 +1627,52 @@ export const AdminPanelModal: React.FC = () => {
             </div>
 
             <form onSubmit={handleSaveProduct} className="space-y-4">
+              {/* Product Active / Paused Status Toggle Switch */}
+              <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between gap-4">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-white">Disponibilidad en Tienda</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 ${
+                      editingProduct.isActive !== false 
+                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                        : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                    }`}>
+                      {editingProduct.isActive !== false ? (
+                        <>
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                          <span>Visible y Activo</span>
+                        </>
+                      ) : (
+                        <>
+                          <EyeOff className="w-3 h-3 text-amber-400" />
+                          <span>Pausado (Oculto en Tienda)</span>
+                        </>
+                      )}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    {editingProduct.isActive !== false
+                      ? 'El producto se muestra en la tienda pública y clientes pueden comprarlo o cotizarlo.'
+                      : 'Pausado temporalmente por inventario bajo o fuera de temporada (no se borra nada).'}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setEditingProduct({ ...editingProduct, isActive: !(editingProduct.isActive !== false) })}
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                    editingProduct.isActive !== false ? 'bg-emerald-500' : 'bg-slate-700'
+                  }`}
+                  aria-label="Alternar estado activo o pausado"
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                      editingProduct.isActive !== false ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+
               <div>
                 <label className="block text-xs font-bold mb-1">Nombre Comercial del Producto o Servicio</label>
                 <input

@@ -104,6 +104,7 @@ interface AdminDataContextType {
   addStoreItem: (item: Omit<StoreItem, 'id'>) => Promise<void>;
   updateStoreItem: (id: string, item: Partial<StoreItem>) => Promise<void>;
   deleteStoreItem: (id: string) => Promise<void>;
+  toggleStoreItemActive: (id: string) => Promise<void>;
   addCategory: (cat: Omit<StoreCategory, 'id'> & { id?: string }) => Promise<void>;
   updateCategory: (id: string, cat: Partial<StoreCategory>) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
@@ -236,6 +237,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           items.push({
             ...data,
             id: docSnap.id,
+            isActive: data.isActive !== false,
             features: Array.isArray(data.features) ? data.features : [],
             images: Array.isArray(data.images) && data.images.length > 0
               ? data.images
@@ -623,6 +625,13 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     } catch (e) {
       console.warn('Firestore deleteDoc store_items:', e);
     }
+  };
+
+  const toggleStoreItemActive = async (id: string) => {
+    const item = storeItems.find((i) => i.id === id);
+    if (!item) return;
+    const currentActive = item.isActive !== false;
+    await updateStoreItem(id, { isActive: !currentActive });
   };
 
   // CRUD for Categories
@@ -1098,6 +1107,7 @@ export const AdminDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         addStoreItem,
         updateStoreItem,
         deleteStoreItem,
+        toggleStoreItemActive,
         addCategory,
         updateCategory,
         deleteCategory,

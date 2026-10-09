@@ -44,6 +44,7 @@ export interface StoreItem {
   images?: string[];
   badge?: string;
   inStock?: boolean;
+  isActive?: boolean;
   videoUrl?: string;
   salesPitch?: string;
   longDescription?: string;
