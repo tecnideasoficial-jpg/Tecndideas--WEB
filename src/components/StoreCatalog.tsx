@@ -24,10 +24,16 @@ import {
   X,
   CreditCard,
   MessageCircle,
-  HelpCircle
+  HelpCircle,
+  Truck,
+  Zap,
+  Loader2,
+  Minus,
+  Plus
 } from 'lucide-react';
 import { useAdminData } from '../context/AdminDataContext';
 import { StoreItem } from '../types';
+import { openBoldCheckout, BOLD_CONFIG } from '../utils/boldCheckout';
 
 // Helper to convert normal video links to safe embed URLs
 export function getVideoEmbedUrl(url?: string): string | null {
@@ -54,12 +60,14 @@ interface StoreProductCardProps {
   item: StoreItem;
   onOpenDetails: (item: StoreItem) => void;
   onOrderWhatsApp: (name: string, price: number) => void;
+  onOpenQuickBuy?: (item: StoreItem) => void;
 }
 
 const StoreProductCard: React.FC<StoreProductCardProps> = ({
   item,
   onOpenDetails,
-  onOrderWhatsApp
+  onOrderWhatsApp,
+  onOpenQuickBuy
 }) => {
   // Collect images array (minimum 1)
   const images = (Array.isArray(item.images) && item.images.length > 0)
@@ -245,6 +253,7 @@ const StoreProductCard: React.FC<StoreProductCardProps> = ({
           type="button"
           onClick={() => onOpenDetails(item)}
           className="flex-1 py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs font-bold hover:bg-blue-50 dark:hover:bg-blue-950/60 hover:text-blue-600 dark:hover:text-blue-400 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+          title="Ver fotos, videos, beneficios y presentación completa"
         >
           <Sparkles className="w-3.5 h-3.5 text-blue-500" />
           <span>Ver detalles</span>
@@ -252,10 +261,12 @@ const StoreProductCard: React.FC<StoreProductCardProps> = ({
 
         <button
           type="button"
-          onClick={() => onOrderWhatsApp(item.name, item.price)}
-          className="flex-1 py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-md shadow-blue-500/20 cursor-pointer flex items-center justify-center gap-1"
+          onClick={() => onOpenQuickBuy ? onOpenQuickBuy(item) : onOpenDetails(item)}
+          className="flex-1 py-2.5 px-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-blue-500/20 cursor-pointer flex items-center justify-center gap-1.5"
+          title="Comprar con Bold (PSE/Tarjetas/Nequi) o por WhatsApp"
         >
-          <span>Comprar / Cotizar</span>
+          <CreditCard className="w-3.5 h-3.5 text-amber-300" />
+          <span>Comprar</span>
         </button>
       </div>
     </div>
@@ -284,6 +295,55 @@ const ProductSalesLandingModal: React.FC<ProductSalesLandingModalProps> = ({
   const safePhotoIdx = selectedPhotoIdx < images.length ? selectedPhotoIdx : 0;
 
   const embedUrl = getVideoEmbedUrl(item.videoUrl);
+
+  // E-commerce state: Quantity, Delivery & Bold Gateway
+  const [quantity, setQuantity] = useState(1);
+  const isPhysical = item.type === 'producto' || ['papeleria', 'tecnologia', 'fisico'].includes(item.category);
+  const [deliveryOption, setDeliveryOption] = useState<'pickup' | 'delivery' | 'digital'>(
+    isPhysical ? 'pickup' : 'digital'
+  );
+  const [isProcessingBold, setIsProcessingBold] = useState(false);
+  const [boldError, setBoldError] = useState('');
+
+  const deliveryCost = deliveryOption === 'delivery' ? 10000 : 0;
+  const subtotal = item.price * quantity;
+  const totalAmount = subtotal + deliveryCost;
+
+  const handlePayWithBold = async () => {
+    try {
+      setIsProcessingBold(true);
+      setBoldError('');
+      const deliveryLabel = deliveryOption === 'delivery' 
+        ? 'Envío Domicilio Medellín' 
+        : deliveryOption === 'pickup' 
+        ? 'Retiro Sede Castilla' 
+        : 'Entrega Digital';
+
+      const desc = `${quantity}x ${item.name} (${deliveryLabel})`;
+      await openBoldCheckout({
+        amount: totalAmount,
+        currency: item.currency || 'COP',
+        description: desc,
+        orderId: `TEC-${Date.now().toString().slice(-8)}`
+      });
+    } catch (err: any) {
+      console.error('Error al iniciar checkout Bold:', err);
+      setBoldError('No se pudo abrir el checkout de Bold. Puedes completar tu compra por WhatsApp.');
+    } finally {
+      setIsProcessingBold(false);
+    }
+  };
+
+  const handleOrderWhatsAppWithQuantity = () => {
+    const deliveryText = deliveryOption === 'delivery' 
+      ? 'con Envío a Domicilio en Medellín (+$10.000 COP)' 
+      : deliveryOption === 'pickup' 
+      ? 'con Retiro presencial en Sede Castilla' 
+      : 'Entrega Digital / Asesoría';
+
+    const text = `Hola Tecnideas, me interesa comprar/adquirir en la Tienda el producto/servicio: *${item.name}*\n• Cantidad: ${quantity}\n• Modalidad: ${deliveryText}\n• Total estimado: $${totalAmount.toLocaleString()} COP.\n¿Cómo procedo con el pago y la entrega?`;
+    window.open(`https://wa.me/573024171818?text=${encodeURIComponent(text)}`, '_blank');
+  };
 
   // Close on Escape key
   useEffect(() => {
@@ -470,8 +530,8 @@ const ProductSalesLandingModal: React.FC<ProductSalesLandingModalProps> = ({
                 )}
               </div>
 
-              {/* Price Block */}
-              <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-100 to-blue-50/50 dark:from-slate-950 dark:to-blue-950/20 border border-slate-200 dark:border-slate-800 space-y-2">
+              {/* Price Block & E-commerce Controls */}
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-100 to-blue-50/50 dark:from-slate-950 dark:to-blue-950/20 border border-slate-200 dark:border-slate-800 space-y-3">
                 <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
                   Inversión transparente sin cobros ocultos:
                 </span>
@@ -480,29 +540,162 @@ const ProductSalesLandingModal: React.FC<ProductSalesLandingModalProps> = ({
                     ${item.price.toLocaleString()}
                   </span>
                   <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
-                    {item.currency || 'COP'}
+                    {item.currency || 'COP'} <span className="text-xs text-slate-500 font-normal">/ unidad</span>
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
                   <CreditCard className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>50% al iniciar y 50% a la entrega • Wompi, Bancolombia, Nequi o Efectivo</span>
+                  <span>Pasarela oficial Bold: Tarjetas Crédito/Débito, PSE, Nequi, Daviplata o Efectivo</span>
                 </p>
+
+                {/* Quantity & Delivery Selector */}
+                <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800/80 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Cantidad:</span>
+                    <div className="flex items-center gap-2 border border-slate-300 dark:border-slate-700 rounded-xl px-2 py-1 bg-white dark:bg-slate-900 shadow-xs">
+                      <button
+                        type="button"
+                        onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                        className="w-6 h-6 rounded flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold cursor-pointer"
+                        title="Disminuir cantidad"
+                      >
+                        <Minus className="w-3.5 h-3.5" />
+                      </button>
+                      <span className="w-8 text-center text-xs font-mono font-bold text-slate-900 dark:text-white">
+                        {quantity}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setQuantity(q => q + 1)}
+                        className="w-6 h-6 rounded flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold cursor-pointer"
+                        title="Aumentar cantidad"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Delivery / Flete Option */}
+                  {isPhysical ? (
+                    <div className="space-y-1.5 pt-1">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                        Método de Entrega en Medellín:
+                      </span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                        <button
+                          type="button"
+                          onClick={() => setDeliveryOption('pickup')}
+                          className={`p-2.5 rounded-xl border text-left cursor-pointer transition-all ${
+                            deliveryOption === 'pickup'
+                              ? 'border-blue-600 bg-blue-50/70 dark:bg-blue-950/50 text-blue-950 dark:text-blue-100 ring-1 ring-blue-500'
+                              : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-600 dark:text-slate-400 bg-white/50 dark:bg-slate-900/50'
+                          }`}
+                        >
+                          <div className="font-bold flex items-center gap-1.5 text-xs">
+                            <MapPin className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                            <span>Retiro en Sede</span>
+                          </div>
+                          <p className="text-[10px] text-slate-500 mt-0.5">Castilla Medellín • Gratis ($0)</p>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setDeliveryOption('delivery')}
+                          className={`p-2.5 rounded-xl border text-left cursor-pointer transition-all ${
+                            deliveryOption === 'delivery'
+                              ? 'border-blue-600 bg-blue-50/70 dark:bg-blue-950/50 text-blue-950 dark:text-blue-100 ring-1 ring-blue-500'
+                              : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-600 dark:text-slate-400 bg-white/50 dark:bg-slate-900/50'
+                          }`}
+                        >
+                          <div className="font-bold flex items-center gap-1.5 text-xs">
+                            <Truck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                            <span>Envío a Domicilio</span>
+                          </div>
+                          <p className="text-[10px] text-slate-500 mt-0.5">Medellín / Valle Aburrá • $10.000</p>
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-2.5 rounded-xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200/60 dark:border-blue-900/40 flex items-center gap-2 text-xs text-blue-800 dark:text-blue-300">
+                      <Zap className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                      <span>Entrega Digital / Asesoría en Línea • Sin recargo de flete ($0 COP)</span>
+                    </div>
+                  )}
+
+                  {/* Pricing Breakdown */}
+                  <div className="pt-2 border-t border-slate-200 dark:border-slate-800 text-xs space-y-1">
+                    <div className="flex justify-between text-slate-500 dark:text-slate-400">
+                      <span>Subtotal ({quantity} {quantity === 1 ? 'unidad' : 'unidades'}):</span>
+                      <span className="font-mono">${subtotal.toLocaleString()} COP</span>
+                    </div>
+                    {isPhysical && (
+                      <div className="flex justify-between text-slate-500 dark:text-slate-400">
+                        <span>Flete / Envío:</span>
+                        <span className="font-mono">{deliveryCost === 0 ? 'Gratis ($0 COP)' : `$${deliveryCost.toLocaleString()} COP`}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-slate-900 dark:text-white font-extrabold text-sm pt-1">
+                      <span>Total Final:</span>
+                      <span className="font-mono text-emerald-600 dark:text-emerald-400">${totalAmount.toLocaleString()} COP</span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              {/* Primary Call to Action */}
+              {/* Primary Call to Action: Bold Checkout + WhatsApp */}
               <div className="space-y-3">
+                {boldError && (
+                  <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-xs">
+                    {boldError}
+                  </div>
+                )}
+
+                {/* Official Bold Payment Button */}
                 <button
                   type="button"
-                  onClick={() => onOrderWhatsApp(item.name, item.price)}
-                  className="w-full py-4 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all shadow-xl shadow-emerald-600/25 cursor-pointer"
+                  onClick={handlePayWithBold}
+                  disabled={isProcessingBold}
+                  className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-[#121E6C] via-[#1C2C8C] to-[#EE424E] hover:opacity-95 text-white font-extrabold text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all shadow-xl shadow-blue-950/25 cursor-pointer disabled:opacity-50"
+                  title="Pagar en línea de forma segura con Pasarela Bold"
                 >
-                  <MessageCircle className="w-5 h-5 fill-current" />
-                  <span>Comprar / Adquirir por WhatsApp</span>
+                  {isProcessingBold ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>Iniciando Pasarela Bold...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="w-5 h-5 text-amber-300" />
+                      <span>Pagar ${totalAmount.toLocaleString()} COP con Bold</span>
+                    </>
+                  )}
                 </button>
 
-                <p className="text-center text-[11px] text-slate-500 dark:text-slate-400">
-                  Respuesta inmediata de nuestro equipo de asesores en Medellín.
-                </p>
+                {/* Bold Badges */}
+                <div className="flex items-center justify-center flex-wrap gap-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                  <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                    💳 Tarjetas
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-blue-600 dark:text-blue-400">
+                    🏦 PSE
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-purple-600 dark:text-purple-400">
+                    📱 Nequi & Daviplata
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-emerald-600 dark:text-emerald-400">
+                    🔒 Bold Seguro
+                  </span>
+                </div>
+
+                {/* WhatsApp Alternative */}
+                <button
+                  type="button"
+                  onClick={handleOrderWhatsAppWithQuantity}
+                  className="w-full py-3 px-4 rounded-xl bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-700 dark:text-emerald-400 font-bold text-xs flex items-center justify-center gap-2 border border-emerald-500/30 transition-all cursor-pointer"
+                >
+                  <MessageCircle className="w-4 h-4 fill-current" />
+                  <span>¿Prefieres asesoría personalizada? Comprar por WhatsApp</span>
+                </button>
               </div>
 
               {/* What is Included Quick Checklist */}
@@ -593,30 +786,44 @@ const ProductSalesLandingModal: React.FC<ProductSalesLandingModalProps> = ({
         {/* Modal Bottom Sticky Conversion Bar */}
         <div className="p-4 sm:px-8 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
           <div>
-            <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Precio Final:</span>
+            <span className="text-[10px] text-slate-500 uppercase tracking-wider block">
+              Total ({quantity} {quantity === 1 ? 'unidad' : 'unidades'}):
+            </span>
             <span className="text-xl sm:text-2xl font-black font-mono text-slate-900 dark:text-white">
-              ${item.price.toLocaleString()} COP
+              ${totalAmount.toLocaleString()} COP
             </span>
           </div>
 
-          <div className="flex gap-2 w-full sm:w-auto">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold cursor-pointer"
+              className="px-3.5 py-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors"
             >
               Cerrar
             </button>
+
             <button
               type="button"
-              onClick={() => {
-                onOrderWhatsApp(item.name, item.price);
-                onClose();
-              }}
-              className="flex-1 sm:flex-none px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-lg shadow-emerald-600/20 cursor-pointer flex items-center justify-center gap-2"
+              onClick={handleOrderWhatsAppWithQuantity}
+              className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 cursor-pointer flex items-center justify-center gap-1.5 transition-all"
             >
               <MessageCircle className="w-4 h-4" />
-              <span>Comprar por WhatsApp</span>
+              <span>WhatsApp</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handlePayWithBold}
+              disabled={isProcessingBold}
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#121E6C] to-[#EE424E] hover:opacity-95 text-white text-xs font-extrabold shadow-md shadow-blue-900/20 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 transition-all"
+            >
+              {isProcessingBold ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <CreditCard className="w-4 h-4 text-amber-300" />
+              )}
+              <span>Pagar con Bold</span>
             </button>
           </div>
         </div>

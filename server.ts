@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import crypto from 'crypto';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
@@ -352,6 +353,40 @@ app.post('/api/calculate-quote', async (req, res) => {
         nextSteps: 'Contáctanos por WhatsApp al +57 302 417 1818.',
       },
     });
+  }
+});
+
+// Bold Colombia Official Payment Gateway Configuration
+const BOLD_IDENTITY_KEY = process.env.BOLD_IDENTITY_KEY || 'vuIkBV88ZJJ-Qvhcx8AEQbWSwPhDe_2ZkBrofsUtQT4';
+const BOLD_SECRET_KEY = process.env.BOLD_SECRET_KEY || 'Eawu4bIZsZkothY2iytWkg';
+
+// API Route: Generate Bold Integrity Signature (SHA-256)
+app.post('/api/bold/hash', (req, res) => {
+  try {
+    const { orderId, amount, currency = 'COP' } = req.body;
+
+    if (!orderId || amount === undefined || amount === null) {
+      return res.status(400).json({ error: 'orderId y amount son requeridos para la firma de integridad de Bold.' });
+    }
+
+    const cleanAmount = String(Math.round(Number(amount)));
+    const cleanCurrency = String(currency).trim().toUpperCase();
+    const cleanOrderId = String(orderId).trim();
+
+    // Official Bold integrity format: orderId + amount + currency + secretKey
+    const concatenatedString = `${cleanOrderId}${cleanAmount}${cleanCurrency}${BOLD_SECRET_KEY}`;
+    const hash = crypto.createHash('sha256').update(concatenatedString).digest('hex');
+
+    return res.json({
+      orderId: cleanOrderId,
+      amount: cleanAmount,
+      currency: cleanCurrency,
+      apiKey: BOLD_IDENTITY_KEY,
+      integritySignature: hash
+    });
+  } catch (error: any) {
+    console.error('Error generating Bold hash:', error);
+    return res.status(500).json({ error: 'Error al generar la firma de seguridad de Bold' });
   }
 });
 
