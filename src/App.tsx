@@ -27,20 +27,27 @@ export default function App() {
   // Handle URL routing initialization & changes (pathname, search & hash)
   useEffect(() => {
     const handleUrlChange = () => {
-      const hash = window.location.hash.replace('#', '').split('?')[0];
+      const rawHash = window.location.hash || '';
+      const cleanHash = rawHash.replace(/^#\/?/, '').split('?')[0];
       const rawPath = window.location.pathname.replace(/^\/+|\/+$/g, '');
       const firstSegment = rawPath.split('/')[0];
-      const search = window.location.search;
+      const search = window.location.search || '';
 
-      // 1. Direct or deep store URLs (e.g. /tienda, /producto/..., /categoria/..., ?producto=..., ?categoria=...)
-      if (
+      // 1. Direct or deep store URLs (e.g. /tienda, /#tienda, /producto/..., /?producto=..., etc.)
+      const isStoreUrl =
         firstSegment === 'tienda' ||
         firstSegment === 'producto' ||
         firstSegment === 'categoria' ||
-        hash === 'tienda' ||
+        cleanHash === 'tienda' ||
+        cleanHash === 'producto' ||
+        cleanHash === 'categoria' ||
+        rawHash.includes('producto=') ||
+        rawHash.includes('categoria=') ||
         search.includes('producto=') ||
-        search.includes('categoria=')
-      ) {
+        search.includes('categoria=') ||
+        search.includes('tienda');
+
+      if (isStoreUrl) {
         setCurrentPage('tienda');
         return;
       }
@@ -59,15 +66,15 @@ export default function App() {
       ];
 
       // 2. Hash routing matches
-      if (hash && validPages.includes(hash)) {
-        setCurrentPage(hash);
+      if (cleanHash && validPages.includes(cleanHash)) {
+        setCurrentPage(cleanHash);
       } 
       // 3. Path routing matches
       else if (firstSegment && validPages.includes(firstSegment)) {
         setCurrentPage(firstSegment);
       } 
       // 4. Default to home
-      else if (!hash && !firstSegment) {
+      else if (!cleanHash && !firstSegment) {
         setCurrentPage('home');
       }
     };
@@ -94,6 +101,8 @@ export default function App() {
     setCurrentPage(pageId);
     if (pageId === 'home') {
       window.history.pushState(null, '', '/');
+    } else if (pageId === 'tienda') {
+      window.history.pushState(null, '', '/#tienda');
     } else {
       window.history.pushState(null, '', `/${pageId}`);
     }

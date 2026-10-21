@@ -29,12 +29,13 @@ import {
   Zap,
   Loader2,
   Minus,
-  Plus
+  Plus,
+  Share2
 } from 'lucide-react';
 import { useAdminData } from '../context/AdminDataContext';
 import { StoreItem } from '../types';
 import { openBoldCheckout, BOLD_CONFIG } from '../utils/boldCheckout';
-import { parseStoreUrl, buildStoreUrl, findStoreItem, findCategoryId } from '../utils/storeUrlSync';
+import { parseStoreUrl, buildStoreUrl, getStoreShareUrl, findStoreItem, findCategoryId } from '../utils/storeUrlSync';
 
 // Helper to convert normal video links to safe embed URLs
 export function getVideoEmbedUrl(url?: string): string | null {
@@ -78,8 +79,30 @@ const StoreProductCard: React.FC<StoreProductCardProps> = ({
   const [currentIdx, setCurrentIdx] = useState(0);
   const [isAuto, setIsAuto] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
+  const [cardCopied, setCardCopied] = useState(false);
 
   const safeIdx = currentIdx < images.length ? currentIdx : 0;
+
+  const handleCardShare = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const shareUrl = getStoreShareUrl(item.category, item.id);
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = shareUrl;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+      setCardCopied(true);
+      setTimeout(() => setCardCopied(false), 2000);
+    } catch (err) {
+      console.error('Error al copiar enlace:', err);
+    }
+  };
 
   // Auto rotation effect
   useEffect(() => {
@@ -148,10 +171,24 @@ const StoreProductCard: React.FC<StoreProductCardProps> = ({
             )}
           </div>
 
-          {/* Price Badge */}
-          <span className="absolute top-3 right-3 bg-slate-950/85 backdrop-blur-md text-white text-[11px] font-mono font-bold px-3 py-1 rounded-md border border-slate-700/80 shadow-md z-10">
-            ${item.price.toLocaleString()} COP
-          </span>
+          {/* Price Badge & Share Action */}
+          <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
+            <button
+              type="button"
+              onClick={handleCardShare}
+              title={cardCopied ? '¡Enlace copiado para compartir!' : 'Copiar enlace directo de este producto'}
+              className="p-1.5 rounded-md bg-slate-950/85 backdrop-blur-md text-white hover:text-cyan-300 border border-slate-700/80 shadow-md cursor-pointer transition-colors"
+            >
+              {cardCopied ? (
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+              ) : (
+                <Share2 className="w-3.5 h-3.5" />
+              )}
+            </button>
+            <span className="bg-slate-950/85 backdrop-blur-md text-white text-[11px] font-mono font-bold px-3 py-1 rounded-md border border-slate-700/80 shadow-md">
+              ${item.price.toLocaleString()} COP
+            </span>
+          </div>
 
           {/* Carousel Controls: Arrows & Auto/Manual Toggle */}
           {images.length > 1 && (
@@ -346,6 +383,29 @@ const ProductSalesLandingModal: React.FC<ProductSalesLandingModalProps> = ({
     window.open(`https://wa.me/573024171818?text=${encodeURIComponent(text)}`, '_blank');
   };
 
+  // Share link state with clipboard feedback
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  const handleCopyShareLink = async () => {
+    const shareUrl = getStoreShareUrl(item.category, item.id);
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = shareUrl;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2500);
+    } catch (err) {
+      console.error('Error al copiar enlace:', err);
+    }
+  };
+
   // Close on Escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -369,13 +429,35 @@ const ProductSalesLandingModal: React.FC<ProductSalesLandingModalProps> = ({
             </span>
           </div>
 
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center font-bold transition-colors cursor-pointer"
-            aria-label="Cerrar ventana"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleCopyShareLink}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/60 text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 text-xs font-bold border border-slate-200 dark:border-slate-700 transition-all cursor-pointer shadow-xs"
+              title="Copiar enlace directo y seguro para compartir este producto"
+            >
+              {copiedLink ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-500" />
+                  <span className="text-emerald-600 dark:text-emerald-400">¡Enlace copiado!</span>
+                </>
+              ) : (
+                <>
+                  <Share2 className="w-3.5 h-3.5 text-blue-500" />
+                  <span className="hidden sm:inline">Compartir enlace</span>
+                  <span className="sm:hidden">Compartir</span>
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center font-bold transition-colors cursor-pointer"
+              aria-label="Cerrar ventana"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Modal Scrollable Body */}
@@ -885,7 +967,11 @@ export const StoreCatalog: React.FC = () => {
     };
 
     window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    window.addEventListener('hashchange', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('hashchange', handlePopState);
+    };
   }, [storeItems, categories]);
 
   const activeItems = storeItems.filter(item => item.isActive !== false);

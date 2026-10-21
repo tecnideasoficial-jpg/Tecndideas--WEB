@@ -9,6 +9,12 @@ export interface StoreUrlParams {
 /**
  * Parses the current browser URL (search params, pathname, or hash)
  * to extract active category and/or product identifiers.
+ * Supports:
+ *  - Hash queries: /#tienda?producto=... &categoria=... or /#/tienda?producto=...
+ *  - Hash params without question mark: /#producto=...
+ *  - Path queries: /tienda?producto=... &categoria=... or /?producto=...
+ *  - Path segments: /producto/:id or /tienda/producto/:id
+ *  - Hash segments: #producto/:id or #/producto/:id
  */
 export function parseStoreUrl(): StoreUrlParams {
   if (typeof window === 'undefined') {
@@ -25,12 +31,20 @@ export function parseStoreUrl(): StoreUrlParams {
   let productId = searchParams.get('producto') || searchParams.get('product') || searchParams.get('p') || null;
   let category = searchParams.get('categoria') || searchParams.get('category') || searchParams.get('cat') || null;
 
-  // 2. Query parameters inside hash string (#tienda?producto=... &categoria=...)
-  if (hash.includes('?')) {
-    const hashQuery = hash.split('?')[1];
-    const hashParams = new URLSearchParams(hashQuery);
-    if (!productId) productId = hashParams.get('producto') || hashParams.get('product') || hashParams.get('p') || null;
-    if (!category) category = hashParams.get('categoria') || hashParams.get('category') || hashParams.get('cat') || null;
+  // 2. Query parameters inside hash string (#tienda?producto=... or #/tienda?producto=... or #producto=...)
+  if (hash) {
+    let hashQuery = '';
+    if (hash.includes('?')) {
+      hashQuery = hash.split('?')[1];
+    } else if (hash.includes('&') || hash.includes('=')) {
+      hashQuery = hash.replace(/^#\/?/, '').replace(/^tienda[&/]?/, '');
+    }
+
+    if (hashQuery) {
+      const hashParams = new URLSearchParams(hashQuery);
+      if (!productId) productId = hashParams.get('producto') || hashParams.get('product') || hashParams.get('p') || null;
+      if (!category) category = hashParams.get('categoria') || hashParams.get('category') || hashParams.get('cat') || null;
+    }
   }
 
   // 3. Path segments: /producto/:id or /tienda/producto/:id
@@ -49,7 +63,7 @@ export function parseStoreUrl(): StoreUrlParams {
     }
   }
 
-  // 5. Hash path segments: #producto/:id or #categoria/:cat
+  // 5. Hash path segments: #producto/:id or #/producto/:id
   if (!productId) {
     const hashProdMatch = hash.match(/#(?:producto|product)\/([^/?#]+)/i);
     if (hashProdMatch && hashProdMatch[1]) {
@@ -57,6 +71,7 @@ export function parseStoreUrl(): StoreUrlParams {
     }
   }
 
+  // 6. Hash path segments: #categoria/:cat or #/categoria/:cat
   if (!category) {
     const hashCatMatch = hash.match(/#(?:categoria|category)\/([^/?#]+)/i);
     if (hashCatMatch && hashCatMatch[1]) {
@@ -72,11 +87,15 @@ export function parseStoreUrl(): StoreUrlParams {
 
 /**
  * Builds a clean canonical store URL string based on category and product selection.
+ * Uses hash-based URL format (`/#tienda?...`) to ensure 100% universal compatibility
+ * across all static hosting environments (Vercel, Netlify, cPanel, S3, GitHub Pages) without
+ * throwing 404 NOT_FOUND errors when links are shared or opened in a new tab.
+ *
  * Examples:
- *  - /tienda
- *  - /tienda?categoria=papeleria
- *  - /tienda?producto=pack-web-pyme
- *  - /tienda?categoria=papeleria&producto=resma-papel
+ *  - /#tienda
+ *  - /#tienda?categoria=papeleria
+ *  - /#tienda?producto=prod-1788894554040
+ *  - /#tienda?categoria=papeleria&producto=prod-1788894554040
  */
 export function buildStoreUrl(category?: string | null, productId?: string | null): string {
   const params = new URLSearchParams();
@@ -90,7 +109,20 @@ export function buildStoreUrl(category?: string | null, productId?: string | nul
   }
 
   const queryString = params.toString();
-  return queryString ? `/tienda?${queryString}` : '/tienda';
+  return queryString ? `/#tienda?${queryString}` : '/#tienda';
+}
+
+/**
+ * Returns a complete absolute URL ready to be copied and shared on WhatsApp, social media, etc.
+ * Guarantees zero 404 errors by anchoring to root hash navigation while preserving
+ * compatibility with server rewrite configurations.
+ */
+export function getStoreShareUrl(category?: string | null, productId?: string | null): string {
+  const relativeUrl = buildStoreUrl(category, productId);
+  if (typeof window !== 'undefined' && window.location.origin) {
+    return `${window.location.origin}${relativeUrl}`;
+  }
+  return `https://tecnideas.com.co${relativeUrl}`;
 }
 
 /**
