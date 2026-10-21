@@ -24,20 +24,61 @@ export default function App() {
   const [isAIAgentOpen, setIsAIAgentOpen] = useState<boolean>(false);
   const [serviceTab, setServiceTab] = useState<'digital' | 'tradicional' | 'ecosistema'>('digital');
 
-  // Handle URL hash routing initialization & changes
+  // Handle URL routing initialization & changes (pathname, search & hash)
   useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.replace('#', '');
-      if (hash && ['home', 'digital', 'tradicional', 'ecosistema', 'cotizador', 'portafolio', 'workspace', 'capacitacion', 'tienda', 'contacto'].includes(hash)) {
+    const handleUrlChange = () => {
+      const hash = window.location.hash.replace('#', '').split('?')[0];
+      const rawPath = window.location.pathname.replace(/^\/+|\/+$/g, '');
+      const firstSegment = rawPath.split('/')[0];
+      const search = window.location.search;
+
+      // 1. Direct or deep store URLs (e.g. /tienda, /producto/..., /categoria/..., ?producto=..., ?categoria=...)
+      if (
+        firstSegment === 'tienda' ||
+        firstSegment === 'producto' ||
+        firstSegment === 'categoria' ||
+        hash === 'tienda' ||
+        search.includes('producto=') ||
+        search.includes('categoria=')
+      ) {
+        setCurrentPage('tienda');
+        return;
+      }
+
+      const validPages = [
+        'home',
+        'digital',
+        'tradicional',
+        'ecosistema',
+        'cotizador',
+        'portafolio',
+        'workspace',
+        'capacitacion',
+        'tienda',
+        'contacto'
+      ];
+
+      // 2. Hash routing matches
+      if (hash && validPages.includes(hash)) {
         setCurrentPage(hash);
-      } else if (!hash) {
+      } 
+      // 3. Path routing matches
+      else if (firstSegment && validPages.includes(firstSegment)) {
+        setCurrentPage(firstSegment);
+      } 
+      // 4. Default to home
+      else if (!hash && !firstSegment) {
         setCurrentPage('home');
       }
     };
 
-    handleHashChange();
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+    handleUrlChange();
+    window.addEventListener('hashchange', handleUrlChange);
+    window.addEventListener('popstate', handleUrlChange);
+    return () => {
+      window.removeEventListener('hashchange', handleUrlChange);
+      window.removeEventListener('popstate', handleUrlChange);
+    };
   }, []);
 
   useEffect(() => {
@@ -51,7 +92,11 @@ export default function App() {
 
   const handleNavigatePage = (pageId: string) => {
     setCurrentPage(pageId);
-    window.location.hash = pageId;
+    if (pageId === 'home') {
+      window.history.pushState(null, '', '/');
+    } else {
+      window.history.pushState(null, '', `/${pageId}`);
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     if (pageId === 'digital') {

@@ -34,6 +34,7 @@ import {
 import { useAdminData } from '../context/AdminDataContext';
 import { StoreItem } from '../types';
 import { openBoldCheckout, BOLD_CONFIG } from '../utils/boldCheckout';
+import { parseStoreUrl, buildStoreUrl, findStoreItem, findCategoryId } from '../utils/storeUrlSync';
 
 // Helper to convert normal video links to safe embed URLs
 export function getVideoEmbedUrl(url?: string): string | null {
@@ -838,11 +839,89 @@ export const StoreCatalog: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('todos');
   const [selectedItem, setSelectedItem] = useState<StoreItem | null>(null);
 
+  // 1. Synchronize category from URL on initial load and when categories change
+  useEffect(() => {
+    const { category } = parseStoreUrl();
+    if (category) {
+      const matchedCat = findCategoryId(categories, category);
+      if (matchedCat) {
+        setSelectedCategory(matchedCat);
+      }
+    }
+  }, [categories]);
+
+  // 2. Synchronize product from URL on initial load and when storeItems change
+  useEffect(() => {
+    if (!storeItems || storeItems.length === 0) return;
+    const { productId } = parseStoreUrl();
+    if (productId && (!selectedItem || selectedItem.id !== productId)) {
+      const found = findStoreItem(storeItems, productId);
+      if (found) {
+        setSelectedItem(found);
+      }
+    }
+  }, [storeItems]);
+
+  // 3. Listen to browser Back/Forward (popstate) navigation for seamless history
+  useEffect(() => {
+    const handlePopState = () => {
+      const { productId, category } = parseStoreUrl();
+
+      // Synchronize product modal state
+      if (productId) {
+        const found = findStoreItem(storeItems, productId);
+        setSelectedItem(found || null);
+      } else {
+        setSelectedItem(null);
+      }
+
+      // Synchronize category state
+      if (category) {
+        const matchedCat = findCategoryId(categories, category);
+        setSelectedCategory(matchedCat || 'todos');
+      } else {
+        setSelectedCategory('todos');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [storeItems, categories]);
+
   const activeItems = storeItems.filter(item => item.isActive !== false);
 
   const filteredItems = selectedCategory === 'todos'
     ? activeItems
     : activeItems.filter(item => item.category === selectedCategory);
+
+  // Category selection handler with URL synchronization
+  const handleCategoryChange = (catId: string) => {
+    setSelectedCategory(catId);
+    const newUrl = buildStoreUrl(catId, selectedItem?.id || null);
+    window.history.pushState({ category: catId }, '', newUrl);
+  };
+
+  // Product modal open handler with URL synchronization
+  const handleOpenProduct = (item: StoreItem) => {
+    setSelectedItem(item);
+    const newUrl = buildStoreUrl(selectedCategory, item.id);
+    window.history.pushState(
+      { isProductModal: true, productId: item.id, category: selectedCategory },
+      '',
+      newUrl
+    );
+  };
+
+  // Product modal close handler: restores previous category / store URL
+  const handleCloseProduct = () => {
+    setSelectedItem(null);
+    const restoreUrl = buildStoreUrl(selectedCategory, null);
+    if (window.history.state?.isProductModal) {
+      window.history.back();
+    } else {
+      window.history.pushState(null, '', restoreUrl);
+    }
+  };
 
   const handleOrderWhatsApp = (itemName: string, price: number) => {
     const text = `Hola Tecnideas, me interesa comprar/adquirir en la Tienda el producto/servicio: *${itemName}* por $${price.toLocaleString()} COP. ¿Cómo procedo con el pago y la entrega?`;
@@ -873,7 +952,7 @@ export const StoreCatalog: React.FC = () => {
           {categories.map((cat) => (
             <button
               key={cat.id}
-              onClick={() => setSelectedCategory(cat.id)}
+              onClick={() => handleCategoryChange(cat.id)}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 selectedCategory === cat.id
                   ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
@@ -891,7 +970,8 @@ export const StoreCatalog: React.FC = () => {
             <StoreProductCard
               key={item.id}
               item={item}
-              onOpenDetails={(it) => setSelectedItem(it)}
+              onOpenDetails={handleOpenProduct}
+              onOpenQuickBuy={handleOpenProduct}
               onOrderWhatsApp={handleOrderWhatsApp}
             />
           ))}
@@ -903,7 +983,7 @@ export const StoreCatalog: React.FC = () => {
       {selectedItem && (
         <ProductSalesLandingModal
           item={selectedItem}
-          onClose={() => setSelectedItem(null)}
+          onClose={handleCloseProduct}
           onOrderWhatsApp={handleOrderWhatsApp}
         />
       )}
